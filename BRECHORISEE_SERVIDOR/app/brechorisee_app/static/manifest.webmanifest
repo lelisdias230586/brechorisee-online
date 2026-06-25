@@ -1,0 +1,47 @@
+{
+  "name": "BRECHORISEE Cliente",
+  "short_name": "BRECHORISEE",
+  "description": "Vitrine online BRECHORISEE para clientes comprarem peças únicas com sacola e acompanhamento.",
+  "start_url": "/cliente",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fbf6ef",
+  "theme_color": "#1f1714",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Vitrine",
+      "url": "/loja",
+      "description": "Ver peças disponíveis"
+    },
+    {
+      "name": "Área da cliente",
+      "url": "/cliente",
+      "description": "Entrar na área da cliente"
+    },
+    {
+      "name": "Live",
+      "url": "/cliente/live-opcoes",
+      "description": "Assistir live e interagir"
+    },
+    {
+      "name": "Sacola",
+      "url": "/loja/carrinho",
+      "description": "Finalizar pedido"
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+{% extends "public_store_base.html" %}
+{% block store_content %}
+<section class="store-hero-modern customer-dashboard">
+  <div class="hero-copy">
+    <p class="eyebrow">Olá, {{ account.name }}</p>
+    <h1>Vitrine segura da cliente.</h1>
+    <p>Você está em uma área exclusiva para comprar e acompanhar pedidos. </p>
+    <div class="inline-actions">
+      <a class="btn primary" href="#pecas">Ver peças</a>
+      <a class="btn ghost" href="/loja/carrinho">Minha sacola</a>
+      <a class="btn ghost" href="/cliente/novidades">Novidades{% if unread_notifications and unread_notifications > 0 %} • {{ unread_notifications }}{% endif %}</a>
+      <a class="btn ghost" href="/cliente/entregas">Minhas entregas</a>
+      <a class="btn ghost" href="/cliente/tutorial">Como usar</a>
+      <a class="btn ghost" href="/cliente/perfil">Minha conta</a>
+      <a class="btn ghost" href="/cliente/sair">Sair</a>
+    </div>
+  </div>
+  <div class="hero-card">
+    <strong>Compra protegida</strong>
+    <span>Pedido reserva a peça até o pagamento ser confirmado.</span>
+    <small>WhatsApp: {{ account.phone }}</small>
+  </div>
+</section>
+
+{% if live_info and live_info.status == 'ao_vivo' %}
+<section class="panel" style="margin-top:14px;border:1px solid rgba(180,89,60,.18);">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Live no ar</p>
+      <h2>Acompanhe ao vivo</h2>
+      <p class="hint">Entre na live para ver a câmera em tempo real, comentar e reagir. A peça reconhecida aparece pequena e troca automaticamente.</p>
+    </div>
+    <a class="btn ghost" href="/cliente/tutorial">Como usar</a>
+    <a class="btn primary" href="/cliente/live">Entrar na live</a>
+  </div>
+  {% if live_info.current_product %}
+  <div class="inline-actions" style="align-items:center;gap:16px;margin-top:14px;flex-wrap:wrap;">
+    {% if live_info.current_product.image_url %}<img src="{{ live_info.current_product.image_url }}" alt="{{ live_info.current_product.title }}" class="live-current-thumb">{% endif %}
+    <div>
+      <strong>Peça em destaque agora:</strong><br>
+      {{ live_info.current_product.title }} • {{ live_info.current_product.price_label }}
+    </div>
+    <a class="btn ghost" href="{{ live_info.current_product.public_url }}">Abrir peça</a>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if recommendations %}
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Selecionadas para você</p>
+    <h2>Sugestões pelo seu perfil</h2>
+  </div>
+</section>
+<section class="store-grid modern-grid recommendations-grid">
+  {% for p in recommendations %}
+    <article class="store-product-card modern-card">
+      <a href="/cliente/peca/{{ p.code }}" class="store-product-photo modern-photo">
+        {% if p.image_filename %}<img src="{{ url_for('static', path='/uploads/' ~ p.image_filename) }}" alt="{{ p.title }}">{% else %}<span>sem foto</span>{% endif %}
+        <em>Para você</em>
+      </a>
+      <div class="store-product-info">
+        <strong>{{ p.title }}</strong>
+        <small>{{ p.size or 'tam. único' }} • {{ p.brand or 'sem marca' }}{% if p.color %} • {{ p.color }}{% endif %}</small>
+        <b>{{ p.sale_price|money }}</b>
+        <div class="inline-actions compact-actions">
+          <button class="btn primary add-to-cart-btn" type="button" data-code="{{ p.code }}" data-title="{{ p.title }}" data-price="{{ p.sale_price }}" data-photo="{{ url_for('static', path='/uploads/' ~ p.image_filename) if p.image_filename else '' }}">Adicionar</button>
+          <a class="btn ghost" href="/cliente/peca/{{ p.code }}">Detalhes</a>
+        </div>
+      </div>
+    </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="store-filter-modern" id="pecas">
+  <form method="get" action="/cliente/vitrine">
+    <div class="search-field">
+      <span>🔎</span>
+      <input name="q" value="{{ q }}" placeholder="Buscar: vestido preto M, Farm, bolsa, jeans...">
+    </div>
+    <select name="categoria">
+      <option value="">Todas as categorias</option>
+      {% for c in categories %}
+        <option value="{{ c.name }}" {{ 'selected' if categoria == c.name else '' }}>{{ c.name }} ({{ c.total }})</option>
+      {% endfor %}
+    </select>
+    <button class="btn primary" type="submit">Buscar</button>
+  </form>
+  <div class="quick-chips">
+    <a href="/cliente/vitrine">Tudo</a>
+    <a href="/cliente/vitrine?q=bolsa">Bolsas</a>
+    <a href="/cliente/vitrine?q=vestido">Vestidos</a>
+    <a href="/cliente/vitrine?q=jeans">Jeans</a>
+    <a href="/cliente/vitrine?q=promoção">Promoções</a>
+  </div>
+</section>
+
+<section class="store-count-row">
+  <span>{{ products|length }} peça(s) disponível(is)</span>
+  <a href="/loja/carrinho">Finalizar pedido →</a>
+</section>
+
+<section class="store-grid modern-grid">
+  {% for p in products %}
+    <article class="store-product-card modern-card">
+      <a href="/cliente/peca/{{ p.code }}" class="store-product-photo modern-photo">
+        {% if p.image_filename %}<img src="{{ url_for('static', path='/uploads/' ~ p.image_filename) }}" alt="{{ p.title }}">{% else %}<span>sem foto</span>{% endif %}
+        <em>Peça única</em>
+      </a>
+      <div class="store-product-info">
+        <strong>{{ p.title }}</strong>
+        <small>{{ p.size or 'tam. único' }} • {{ p.brand or 'sem marca' }}{% if p.color %} • {{ p.color }}{% endif %}</small>
+        <b>{{ p.sale_price|money }}</b>
+        <div class="inline-actions compact-actions">
+          <button class="btn primary add-to-cart-btn" type="button" data-code="{{ p.code }}" data-title="{{ p.title }}" data-price="{{ p.sale_price }}" data-photo="{{ url_for('static', path='/uploads/' ~ p.image_filename) if p.image_filename else '' }}">Adicionar</button>
+          <a class="btn ghost" href="/cliente/peca/{{ p.code }}">Detalhes</a>
+        </div>
+      </div>
+    </article>
+  {% else %}
+    <div class="empty-state store-empty">
+      <h3>Nenhuma peça encontrada.</h3>
+      <p>Tente buscar por outro termo.</p>
+      <a class="btn primary" href="/cliente/vitrine">Ver tudo</a>
+    </div>
+  {% endfor %}
+</section>
+
+<section class="panel customer-orders-card">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Meus pedidos</p>
+      <h2>Últimos pedidos vinculados ao seu WhatsApp</h2>
+    </div>
+  </div>
+  <div class="draft-grid">
+    {% for o in orders %}
+      <article class="draft-card">
+        <strong>{{ o.order_code }}</strong>
+        <small>{{ o.status|replace('_',' ') }} • {{ o.total|money }}</small>
+        <p>{{ o.created_at|date_br }}</p>
+        <a class="btn ghost" href="/loja/pedido/{{ o.id }}">Abrir pedido</a>
+      </article>
+    {% else %}
+      <div class="empty-state compact">
+        <h3>Nenhum pedido ainda.</h3>
+        <p>Adicione peças à sacola e finalize quando quiser.</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

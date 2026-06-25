@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block page_title %}Bot BRECHORISEE{% endblock %}
+{% block content %}
+<section class="bot-risee-admin">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Atendimento automático</p>
+      <h1>Bot BRECHORISEE</h1>
+      <p>Base inicial com mais de 50 perguntas e respostas para live, reservas, pagamentos, entrega, pedidos e pós-venda.</p>
+    </div>
+    <div class="header-actions"><a class="btn ghost" href="/atendimento">Abrir Chat BRECHORISEE</a><a class="btn" href="/buscas-pecas">Ver buscas de peças</a></div>
+  </div>
+
+  <div class="bot-risee-cards">
+    <article class="metric-card">
+      <span>Perguntas cadastradas</span>
+      <strong>{{ faqs|length }}</strong>
+      <small>respostas automáticas ativas/editáveis no banco</small>
+    </article>
+    <article class="metric-card">
+      <span>Status do bot</span>
+      <strong>{{ 'Ligado' if settings.get('enabled','1') == '1' else 'Desligado' }}</strong>
+      <small>pode ser alterado sem mexer no código</small>
+    </article>
+    <article class="metric-card">
+      <span>Sensibilidade</span>
+      <strong>{{ settings.get('min_score','2') }}</strong>
+      <small>quanto menor, mais respostas automáticas</small>
+    </article>
+    <article class="metric-card">
+      <span>Busca de peças</span>
+      <strong>{{ 'Ligada' if settings.get('product_search_enabled','1') == '1' else 'Desligada' }}</strong>
+      <small>responde “tem vestido preto M?” buscando no catálogo</small>
+    </article>
+  </div>
+
+  <form class="card bot-risee-settings" id="botSettingsForm">
+    <h2>Configuração rápida</h2>
+    <label>
+      <span>Bot ativo</span>
+      <select name="enabled">
+        <option value="1" {{ 'selected' if settings.get('enabled','1') == '1' else '' }}>Sim</option>
+        <option value="0" {{ 'selected' if settings.get('enabled','1') != '1' else '' }}>Não</option>
+      </select>
+    </label>
+    <label>
+      <span>Sensibilidade mínima</span>
+      <input type="number" name="min_score" min="1" max="10" value="{{ settings.get('min_score','2') }}">
+    </label>
+    <label>
+      <span>Busca inteligente de peças</span>
+      <select name="product_search_enabled">
+        <option value="1" {{ 'selected' if settings.get('product_search_enabled','1') == '1' else '' }}>Ligada</option>
+        <option value="0" {{ 'selected' if settings.get('product_search_enabled','1') != '1' else '' }}>Desligada</option>
+      </select>
+    </label>
+    <label>
+      <span>Máximo de peças sugeridas</span>
+      <input type="number" name="product_search_max_results" min="1" max="10" value="{{ settings.get('product_search_max_results','5') }}">
+    </label>
+    <button class="btn" type="submit">Salvar configuração</button>
+  </form>
+
+  <form class="card bot-risee-test" id="botTestForm">
+    <h2>Testar uma pergunta</h2>
+    <div class="inline-form">
+      <input name="message" placeholder="Ex.: Tem vestido preto M até 60 reais?">
+      <button class="btn" type="submit">Testar</button>
+    </div>
+    <pre id="botTestResult"></pre>
+  </form>
+
+  <div class="card">
+    <h2>Base de perguntas e respostas</h2>
+    <p class="muted">A base é semiautomática: o bot procura palavras-chave e usa contexto da peça/pedido quando existir.</p>
+    <div class="bot-risee-faq-list">
+      {% for faq in faqs %}
+        <article class="bot-risee-faq">
+          <div>
+            <span class="pill">{{ faq.category }}</span>
+            <strong>{{ faq.question }}</strong>
+          </div>
+          <p>{{ faq.answer }}</p>
+          <small>Palavras-chave: {{ faq.keywords }} • Usos: {{ faq.usage_count }}</small>
+        </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<script>
+(() => {
+  const settingsForm = document.getElementById('botSettingsForm');
+  if (settingsForm) {
+    settingsForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const res = await fetch('/api/bot-risee/settings', {method:'POST', body:new FormData(settingsForm)});
+      const data = await res.json();
+      alert(data.ok ? 'Configuração salva.' : (data.message || 'Falha ao salvar.'));
+      if (data.ok) location.reload();
+    });
+  }
+  const testForm = document.getElementById('botTestForm');
+  const out = document.getElementById('botTestResult');
+  if (testForm && out) {
+    testForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const res = await fetch('/api/bot-risee/test', {method:'POST', body:new FormData(testForm)});
+      const data = await res.json();
+      out.textContent = data.ok ? data.answer : (data.message || 'Sem resposta.');
+    });
+  }
+})();
+</script>
+{% endblock %}

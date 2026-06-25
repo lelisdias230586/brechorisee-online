@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#050505">
+  <title>BRECHORISEE • Studio da live</title>
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+</head>
+<body>
+<style>
+html,body{margin:0!important;padding:0!important;width:100%;min-height:100%;background:#050505;color:#fff;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-x:hidden}.panel{box-sizing:border-box}.section-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.inline-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:16px;border:1px solid rgba(255,255,255,.25);padding:12px 16px;text-decoration:none;background:rgba(255,255,255,.08);color:inherit;font-weight:700}.btn.primary{background:#ad4f3f;color:#fff;border-color:#ad4f3f}.btn.ghost{background:rgba(255,255,255,.08)}input{border-radius:18px;border:1px solid #eadfd8;padding:14px 16px;font:inherit}.eyebrow{letter-spacing:.16em;text-transform:uppercase;font-size:.75rem;color:#b85a48;font-weight:800}.hint{font-size:.95rem}.empty-state{padding:16px;border-radius:20px;background:rgba(255,255,255,.08)}
+body>section.panel:first-of-type{display:none}.live-studio-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.75fr);gap:0;min-height:100vh}.live-stage{position:relative;background:#050505;border-radius:0;overflow:hidden;min-height:100vh;padding:0;color:#fff}.live-stage video,.live-stage img.stage-fallback{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#141414}.live-stage::before{content:'';position:absolute;left:0;right:0;top:0;height:160px;background:linear-gradient(to bottom,rgba(0,0,0,.58),rgba(0,0,0,0));z-index:1}.live-stage::after{content:'';position:absolute;left:0;right:0;bottom:0;height:280px;background:linear-gradient(to top,rgba(0,0,0,.84),rgba(0,0,0,.32),rgba(0,0,0,0));z-index:1}.live-topbar{position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:flex-start;z-index:3}.host-mini{display:flex;align-items:center;gap:10px}.host-mini img{width:42px;height:42px;border-radius:50%;background:#fff;border:2px solid rgba(255,255,255,.85)}.live-badge{display:inline-flex;align-items:center;gap:8px;background:#ff1c74;color:#fff;padding:10px 14px;border-radius:10px;font-weight:800}.viewer-badge{background:rgba(90,90,90,.75);padding:10px 14px;border-radius:10px;font-weight:700}.admin-reference-stack{position:absolute;right:16px;bottom:104px;width:148px;z-index:3;display:flex;flex-direction:column;gap:10px;max-height:52vh;overflow:hidden}.product-overlay,.admin-reference-card{width:100%;box-sizing:border-box;padding:8px;border-radius:18px;background:rgba(24,24,24,.82);backdrop-filter:blur(10px);color:#fff;text-decoration:none;box-shadow:0 10px 26px rgba(0,0,0,.22)}.product-overlay img,.admin-reference-card img{position:static;width:100%;height:92px;border-radius:14px;object-fit:contain;object-position:center;background:#fffaf5;padding:4px}.product-overlay strong,.admin-reference-card strong{display:block;font-size:.86rem;line-height:1.15;margin-top:8px}.product-overlay small,.admin-reference-card small{display:block;font-size:.74rem;opacity:.9;margin-top:4px}.admin-reference-card.primary{outline:2px solid rgba(255,28,116,.72)}.admin-reference-card.is-reserved{border:1px solid rgba(255,210,80,.75);background:rgba(35,25,8,.78)}.admin-reference-card.is-reserved small{color:#ffd976;font-weight:800}.remove-reference-btn{width:100%;margin-top:8px;border:none;border-radius:12px;padding:7px 8px;background:rgba(255,255,255,.16);color:#fff;font-weight:800;font-size:.72rem;cursor:pointer}.remove-reference-btn:hover{background:rgba(255,80,80,.42)}.reference-empty-admin{padding:12px;border-radius:16px;background:rgba(0,0,0,.52);font-size:.84rem}.comments-overlay{position:absolute;left:16px;right:144px;bottom:98px;z-index:3;display:flex;flex-direction:column;gap:10px;max-height:38vh;overflow:hidden}.chat-item-live{display:flex;align-items:flex-start;gap:10px}.chat-bubble-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#f7b0c5,#ddb4ff);display:flex;align-items:center;justify-content:center;color:#222;font-weight:800;flex:0 0 40px}.chat-bubble-text strong{display:block;font-size:1rem}.chat-bubble-text span{font-size:1rem;line-height:1.25;text-shadow:0 1px 2px rgba(0,0,0,.4)}.camera-help{position:absolute;left:16px;right:16px;bottom:16px;z-index:3;padding:12px 14px;border-radius:18px;background:rgba(0,0,0,.4);backdrop-filter:blur(6px)}.studio-side{display:flex;flex-direction:column;gap:14px}.panel .hint{color:#6f655f}.studio-footer-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.marker-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.emoji-bar{display:flex;gap:8px;flex-wrap:wrap}.emoji-bar button{border:none;border-radius:16px;padding:10px 12px;background:#f4ebe6;font-size:1.2rem;cursor:pointer}.info-list{display:grid;gap:10px}.mini-item{display:flex;gap:10px;align-items:center;padding:10px;background:#faf6f3;border-radius:18px}.mini-item img{width:58px;height:58px;border-radius:14px;object-fit:contain;object-position:center;background:#fffaf5;padding:4px}.brecho-drag-handle{display:flex;align-items:center;justify-content:center;gap:6px;margin:0 0 8px 0;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.16);color:#fff;font-size:.74rem;font-weight:900;letter-spacing:.02em;cursor:grab;touch-action:none;user-select:none}.brecho-drag-handle:active{cursor:grabbing}.brecho-floating-movable{will-change:left,top;touch-action:auto}.brecho-floating-movable.is-dragging{opacity:.92;transform:scale(.99)}@media(max-width:980px){.live-studio-grid{grid-template-columns:1fr}.live-stage{min-height:72vh}.comments-overlay{right:132px}.studio-footer-actions,.marker-grid{grid-template-columns:1fr}}
+</style>
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Studio da live</p>
+      <h2>{{ session.title }}</h2>
+      <p class="hint">Tela grande com comentários sobre a imagem, visual inspirando live social. A peça reconhecida aparece pequena à direita.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="btn ghost" href="/live">Voltar</a>
+    </div>
+  </div>
+</section>
+<section class="live-studio-grid">
+  <div class="live-stage panel">
+    <video id="studioVideo" playsinline autoplay muted></video>
+    <canvas id="studioCanvas" hidden></canvas>
+    <div class="live-topbar">
+      <div class="host-mini"><img src="{{ url_for('static', path='/img/logo-brechorisee-tight.png') }}" alt="BRECHORISEE"><strong>brechorisee</strong></div>
+      <div class="inline-actions"><span class="live-badge">AO VIVO</span><span class="viewer-badge" id="adminViewerBadge">👁 0</span></div>
+    </div>
+    <div class="comments-overlay" id="chatList"></div>
+    <div class="admin-reference-stack" id="adminReferenceStack">
+      <div class="product-overlay" id="currentProductOverlay" data-id="{{ current_product.id if current_product else '' }}" data-title="{{ current_product.title if current_product else '' }}" data-code="{{ current_product.code if current_product else '' }}" data-price="{{ current_product.sale_price|money if current_product else '' }}" data-characteristics="{{ current_product.characteristics if current_product else '' }}" data-measurements="{{ current_product.measurements if current_product else '' }}" data-image="{{ url_for('static', path='/uploads/' ~ current_product.image_filename) if current_product and current_product.image_filename else '' }}">
+        {% if current_product and current_product.image_filename %}<img id="overlayImage" src="{{ url_for('static', path='/uploads/' ~ current_product.image_filename) }}" alt="{{ current_product.title }}">{% else %}<img id="overlayImage" src="" alt="Peça atual" style="display:none">{% endif %}
+        <strong id="overlayTitle">{{ current_product.title if current_product else 'Aguardando reconhecimento...' }}</strong>
+        <small id="overlayMeta">{% if current_product %}{{ current_product.code }} • {{ current_product.sale_price|money }}{% else %}A peça aparece aqui.{% endif %}</small>
+        <small id="overlayExtra">{% if current_product %}{{ current_product.characteristics or current_product.measurements or '' }}{% endif %}</small>
+        <button class="remove-reference-btn" type="button" id="removeCurrentReferenceBtn" style="display:none">Remover referência</button>
+      </div>
+      {% if reference_products %}
+        {% for p in reference_products %}
+          {% if not current_product or p.id != current_product.id %}
+          <a class="admin-reference-card" href="{{ p.public_url }}" data-product-id="{{ p.id }}">
+            {% if p.image_url %}<img src="{{ p.image_url }}" alt="{{ p.title }}">{% else %}<img src="{{ url_for('static', path='/img/logo-brechorisee-tight.png') }}" alt="{{ p.title }}">{% endif %}
+            <strong>{{ p.title }}</strong>
+            <small>{{ p.price_label }}</small>
+            <button class="remove-reference-btn" type="button" data-remove-reference="{{ p.id }}">Remover referência</button>
+          </a>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      <div class="reference-empty-admin" id="adminReferenceEmpty" {% if current_product or reference_products %}style="display:none"{% endif %}>Aguardando peças reconhecidas...</div>
+    </div>
+    <div class="camera-help">
+      <div id="cameraStatus">Toque abaixo para abrir a câmera do studio.</div>
+      <button class="btn primary" type="button" id="openCameraBtn">📷 Abrir câmera</button>
+      <small>Se o microfone não abrir, a câmera continua para reconhecimento.</small>
+    </div>
+  </div>
+  <div class="studio-side">
+    <section class="panel">
+      <div class="section-head no-margin"><div><p class="eyebrow">Interação</p><h2>Comentários e emojis</h2></div></div>
+      <form id="adminMessageForm" class="search-row" onsubmit="return false;">
+        <input id="adminMessageInput" placeholder="Mensagem rápida para registrar na interação">
+        <button class="btn primary" type="submit">Registrar</button>
+      </form>
+      <div class="emoji-bar" id="adminReactionBar">
+        <button data-emoji="❤️" type="button">❤️</button><button data-emoji="😍" type="button">😍</button><button data-emoji="🔥" type="button">🔥</button><button data-emoji="👏" type="button">👏</button><button data-emoji="🛍️" type="button">🛍️</button>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="section-head no-margin"><div><p class="eyebrow">Reconhecimento</p><h2>Ações rápidas da peça</h2></div></div>
+      <div class="studio-footer-actions">
+        <button class="btn primary" type="button" id="fixCurrentBtn">Fixar peça atual</button>
+        <button class="btn" type="button" id="soldCurrentBtn">Marcar vendida</button>
+        <button class="btn ghost" type="button" id="skipCurrentBtn">Trocar peça</button>
+      </div>
+      <div class="marker-grid" style="margin-top:12px;">
+        <button class="btn" type="button" data-marker="descricao">Características</button>
+        <button class="btn" type="button" data-marker="valor">Valor</button>
+        <button class="btn" type="button" data-marker="medidas">Medidas</button>
+        <button class="btn" type="button" data-marker="como_usar">Como usar</button>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="section-head no-margin"><div><p class="eyebrow">Itens recentes</p><h2>Histórico da live</h2></div></div>
+      <div id="recentItems" class="info-list">
+        {% for item in items %}
+          <div class="mini-item">{% if item.image_filename %}<img src="{{ url_for('static', path='/uploads/' ~ item.image_filename) }}" alt="{{ item.product_title }}">{% endif %}<div><strong>{{ item.product_title }}</strong><br><small>{{ item.product_code }} • {{ item.action }}</small></div></div>
+        {% else %}<div class="empty-state compact"><p>Nenhuma peça registrada ainda.</p></div>{% endfor %}
+      </div>
+    </section>
+    <section class="panel">
+      <div class="section-head no-margin"><div><p class="eyebrow">Encerrar</p><h2>Fim da live</h2></div></div>
+      <p class="hint">Ao encerrar, o sistema oferece <strong>arquivar</strong>, <strong>excluir</strong> ou <strong>otimizar</strong> a gravação.</p>
+      <form id="endLiveForm" method="post" action="/live/end"><input type="hidden" name="session_id" value="{{ session.id }}"><button class="btn primary" type="submit" id="endLiveBtn">Encerrar live</button></form>
+    </section>
+  </div>
+</section>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const sessionId = {{ session.id }};
+  const video = document.getElementById('studioVideo');
+  const canvas = document.getElementById('studioCanvas');
+  const openCameraBtn = document.getElementById('openCameraBtn');
+  const cameraStatus = document.getElementById('cameraStatus');
+  const adminReferenceStack = document.getElementById('adminReferenceStack');
+  const adminReferenceEmpty = document.getElementById('adminReferenceEmpty');
+  const overlayImage = document.getElementById('overlayImage');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlayMeta = document.getElementById('overlayMeta');
+  const overlayExtra = document.getElementById('overlayExtra');
+  const chatList = document.getElementById('chatList');
+  const adminMessageForm = document.getElementById('adminMessageForm');
+  const adminMessageInput = document.getElementById('adminMessageInput');
+  const endLiveForm = document.getElementById('endLiveForm');
+  const recentItems = document.getElementById('recentItems');
+  const adminViewerBadge = document.getElementById('adminViewerBadge');
+  const removeCurrentReferenceBtn = document.getElementById('removeCurrentReferenceBtn');
+  let stream = null, currentProduct = null, liveStartedAt = Date.now(), recordingChunks = [], recorder = null, stopping = false;
+  let liveIntervalIds = [];
+  let restartCameraBusy = false;
+  let lastVideoTime = 0;
+  let lastVideoProgressAt = Date.now();
+  const overlayRoot = document.getElementById('currentProductOverlay');
+  const elapsedSeconds = () => Math.max(0, Math.round((Date.now() - liveStartedAt) / 1000));
+  const initialProductId = overlayRoot?.dataset?.id ? Number(overlayRoot.dataset.id) : null;
+  if (initialProductId) currentProduct = {id: initialProductId, title: overlayRoot.dataset.title || '', code: overlayRoot.dataset.code || '', price_label: overlayRoot.dataset.price || '', characteristics: overlayRoot.dataset.characteristics || '', measurements: overlayRoot.dataset.measurements || '', image_url: overlayRoot.dataset.image || ''};
+
+  function installFloatingDrag(el, key, label) {
+    if (!el || el.dataset.dragReady === '1') return;
+    el.dataset.dragReady = '1';
+    el.classList.add('brecho-floating-movable');
+    const handle = document.createElement('div');
+    handle.className = 'brecho-drag-handle';
+    handle.textContent = label || '⠿ mover';
+    el.insertBefore(handle, el.firstChild);
+    const saved = localStorage.getItem('brechorisee.drag.' + key);
+    if (saved) {
+      try {
+        const pos = JSON.parse(saved);
+        el.style.right = 'auto';
+        el.style.bottom = 'auto';
+        el.style.left = Math.max(0, Number(pos.x || 0)) + 'px';
+        el.style.top = Math.max(0, Number(pos.y || 0)) + 'px';
+      } catch (e) {}
+    }
+    let startX = 0, startY = 0, originX = 0, originY = 0, dragging = false;
+    const currentRect = () => el.getBoundingClientRect();
+    const onMove = ev => {
+      if (!dragging) return;
+      const p = ev.touches ? ev.touches[0] : ev;
+      const x = Math.max(0, Math.min(window.innerWidth - 60, originX + p.clientX - startX));
+      const y = Math.max(0, Math.min(window.innerHeight - 60, originY + p.clientY - startY));
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      ev.preventDefault();
+    };
+    const onUp = () => {
+      if (!dragging) return;
+      dragging = false;
+      el.classList.remove('is-dragging');
+      const r = currentRect();
+      localStorage.setItem('brechorisee.drag.' + key, JSON.stringify({x: Math.round(r.left), y: Math.round(r.top)}));
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+    };
+    handle.addEventListener('mousedown', ev => {
+      const r = currentRect();
+      dragging = true;
+      startX = ev.clientX; startY = ev.clientY; originX = r.left; originY = r.top;
+      el.classList.add('is-dragging');
+      window.addEventListener('mousemove', onMove, {passive:false});
+      window.addEventListener('mouseup', onUp);
+      ev.preventDefault();
+    });
+    handle.addEventListener('touchstart', ev => {
+      const p = ev.touches[0], r = currentRect();
+      dragging = true;
+      startX = p.clientX; startY = p.clientY; originX = r.left; originY = r.top;
+      el.classList.add('is-dragging');
+      window.addEventListener('touchmove', onMove, {passive:false});
+      window.addEventListener('touchend', onUp);
+      ev.preventDefault();
+    }, {passive:false});
+  }
+
+  installFloatingDrag(adminReferenceStack, 'studio.references', '⠿ mover peças');
+  installFloatingDrag(chatList, 'studio.comments', '⠿ mover comentários');
+  installFloatingDrag(document.querySelector('.camera-help'), 'studio.camera', '⠿ mover câmera/controles');
+
+  const avatarFor = (name='') => `<div class="chat-bubble-avatar">${(name || 'C').trim().slice(0,1).toUpperCase()}</div>`;
+  const updateOverlay = (product) => {
+    currentProduct = product || null;
+    if (!product) { overlayTitle.textContent = 'Aguardando reconhecimento...'; overlayMeta.textContent = 'A peça aparece aqui.'; overlayExtra.textContent=''; overlayImage.style.display='none'; overlayImage.src=''; if (removeCurrentReferenceBtn) { removeCurrentReferenceBtn.style.display='none'; removeCurrentReferenceBtn.dataset.productId=''; } return; }
+    overlayTitle.textContent = product.title || 'Peça atual';
+    if (product.status === 'reservado') {
+      overlayMeta.textContent = product.reserved_label || `Reservada para ${product.reserved_for || 'cliente'}`;
+      overlayExtra.textContent = [product.reservation_source || '', product.reservation_code || '', product.reservation_expires_at ? `até ${product.reservation_expires_at}` : ''].filter(Boolean).join(' • ');
+    } else {
+      overlayMeta.textContent = `${product.code || ''} • ${product.price_label || ''}`.trim();
+      overlayExtra.textContent = [product.characteristics || '', product.measurements || ''].filter(Boolean).join(' • ');
+    }
+    if (product.image_url) { overlayImage.src = product.image_url; overlayImage.style.display='block'; } else { overlayImage.style.display='none'; }
+    if (removeCurrentReferenceBtn) { removeCurrentReferenceBtn.style.display = product.status === 'reservado' ? 'none' : 'block'; removeCurrentReferenceBtn.dataset.productId = String(product.id || ''); }
+  };
+  const renderAdminReferences = (products) => {
+    const list = (products || []).filter(Boolean);
+    if (!adminReferenceStack) return;
+    adminReferenceStack.querySelectorAll('.admin-reference-card').forEach(el => el.remove());
+    if (!list.length) {
+      updateOverlay(null);
+      if (adminReferenceEmpty) adminReferenceEmpty.style.display = 'block';
+      return;
+    }
+    if (adminReferenceEmpty) adminReferenceEmpty.style.display = 'none';
+    updateOverlay(list[0]);
+    list.slice(1, 6).forEach(product => {
+      const a = document.createElement('div');
+      a.className = 'admin-reference-card' + (product.status === 'reservado' ? ' is-reserved' : '');
+      a.dataset.productId = String(product.id);
+      const img = product.image_url || '/static/img/logo-brechorisee-tight.png';
+      const statusLabel = product.status === 'reservado'
+        ? (product.reserved_label || `Reservada para ${product.reserved_for || 'cliente'}`)
+        : (product.price_label || '');
+      const removeButton = product.status === 'reservado' ? '' : `<button class="remove-reference-btn" type="button" data-remove-reference="${product.id}">Remover referência</button>`;
+      a.innerHTML = `<img src="${img}" alt="${product.title || 'Peça'}"><strong>${product.title || 'Peça'}</strong><small>${statusLabel}</small>${removeButton}`;
+      adminReferenceStack.insertBefore(a, adminReferenceEmpty);
+    });
+  };
+  const renderComments = (comments, reactions, viewerCount = 0) => {
+    const preservedDragHandle = chatList.querySelector('.brecho-drag-handle');
+    chatList.innerHTML = '';
+    if (preservedDragHandle) chatList.appendChild(preservedDragHandle);
+    const merged=[]; (comments||[]).slice(-5).forEach(i=>merged.push({type:'comment',...i})); (reactions||[]).slice(-3).forEach(i=>merged.push({type:'reaction',...i})); merged.sort((a,b)=>String(a.created_at||'').localeCompare(String(b.created_at||'')));
+    merged.forEach(item => { const div=document.createElement('div'); div.className='chat-item-live'; div.innerHTML = item.type==='reaction' ? `${avatarFor(item.author_name)}<div class="chat-bubble-text"><strong>${item.author_name || 'Cliente'}</strong><span>${item.emoji || '❤️'}</span></div>` : `${avatarFor(item.author_name)}<div class="chat-bubble-text"><strong>${item.author_name || 'Cliente'}</strong><span>${item.message || ''}</span></div>`; chatList.appendChild(div); });
+    adminViewerBadge.textContent = `👁 ${viewerCount || 0}`;
+  };
+  function streamIsActive() {
+    try {
+      return !!stream && stream.getVideoTracks().some(track => track.readyState === 'live' && track.enabled !== false);
+    } catch (e) {
+      return false;
+    }
+  }
+  function clearLiveTimers() {
+    liveIntervalIds.forEach(id => clearInterval(id));
+    liveIntervalIds = [];
+  }
+  function startLiveTimers() {
+    clearLiveTimers();
+    liveIntervalIds.push(setInterval(uploadFrame, 3000));
+    liveIntervalIds.push(setInterval(recognizeFrame, 2500));
+    liveIntervalIds.push(setInterval(refreshDashboard, 3000));
+    liveIntervalIds.push(setInterval(watchdogCamera, 5000));
+  }
+  function stopCamera() {
+    try {
+      if (recorder && recorder.state !== 'inactive') recorder.stop();
+    } catch (e) {}
+    recorder = null;
+    try {
+      if (stream) stream.getTracks().forEach(track => track.stop());
+    } catch (e) {}
+    stream = null;
+    try {
+      video.pause();
+      video.srcObject = null;
+      video.removeAttribute('src');
+      video.load();
+    } catch (e) {}
+    if (openCameraBtn) {
+      openCameraBtn.disabled = false;
+      openCameraBtn.textContent = '📷 Abrir câmera';
+    }
+  }
+  async function resumeLiveStudio(forceCamera = false) {
+    clearLiveTimers();
+    if (forceCamera || !streamIsActive() || video.paused || video.readyState < 2) {
+      await startCamera(true);
+    } else {
+      await video.play().catch(() => {});
+    }
+    await refreshDashboard();
+    startLiveTimers();
+  }
+  async function watchdogCamera() {
+    if (document.hidden || !streamIsActive()) return;
+    const now = Date.now();
+    const current = Number(video.currentTime || 0);
+    if (current > lastVideoTime + 0.05) {
+      lastVideoTime = current;
+      lastVideoProgressAt = now;
+      return;
+    }
+    if (now - lastVideoProgressAt > 12000) {
+      cameraStatus.textContent = 'Câmera pausada pelo aparelho. Reabrindo automaticamente...';
+      await startCamera(true);
+      lastVideoProgressAt = Date.now();
+    }
+  }
+  window.brechoriseeResumeLiveStudio = () => resumeLiveStudio(true);
+  window.brechoriseePauseLiveStudio = () => { clearLiveTimers(); };
+
+  async function startCamera(forceRestart = false) {
+    if (restartCameraBusy) return;
+    restartCameraBusy = true;
+    if (forceRestart) stopCamera();
+    if (!forceRestart && streamIsActive()) { restartCameraBusy = false; return; }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { cameraStatus.textContent='Este WebView/navegador não liberou getUserMedia. Atualize o app ou abra pela nuvem HTTPS.'; overlayMeta.textContent='Câmera não disponível neste navegador interno.'; restartCameraBusy=false; return; }
+    if (!window.isSecureContext) { cameraStatus.textContent='A câmera exige conexão segura. Use o endereço HTTPS da nuvem ou configure HTTPS no servidor local.'; overlayMeta.textContent='Conexão sem HTTPS bloqueia a câmera.'; restartCameraBusy=false; return; }
+    try {
+      cameraStatus.textContent='Solicitando permissão de câmera e microfone...';
+      try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal:'environment' }, width:{ideal:1280}, height:{ideal:720} }, audio:true }); } catch (audioError) { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:{ ideal:'environment' } }, audio:false }); }
+      video.srcObject = stream; video.muted = true; video.setAttribute('playsinline','true'); await video.play().catch(()=>{});
+      cameraStatus.textContent = stream.getAudioTracks().length ? 'Câmera e microfone ativos.' : 'Câmera ativa. Microfone não autorizado neste aparelho.';
+      openCameraBtn.textContent='✅ Câmera aberta'; openCameraBtn.disabled=true;
+      if (typeof MediaRecorder !== 'undefined') { try { recorder = new MediaRecorder(stream, { mimeType:'video/webm' }); } catch(e) { try { recorder = new MediaRecorder(stream); } catch(ignored) { recorder=null; } } if (recorder) { recorder.ondataavailable = ev => { if (ev.data && ev.data.size > 0) recordingChunks.push(ev.data); }; recorder.start(3000); } }
+      lastVideoTime = Number(video.currentTime || 0);
+      lastVideoProgressAt = Date.now();
+    } catch(e) { const msg = e && e.name ? e.name : 'erro'; cameraStatus.textContent = 'Não foi possível abrir a câmera: ' + msg + '. Verifique permissões do app Android e do navegador.'; overlayMeta.textContent='Não foi possível acessar a câmera/microfone.'; openCameraBtn.disabled=false; console.error(e); }
+    finally { restartCameraBusy = false; }
+  }
+  let uploadFrameBusy = false;
+  let recognizeFrameBusy = false;
+  let refreshDashboardBusy = false;
+  async function captureBlob(type='image/jpeg', quality=0.62, maxWidth=720) {
+    if (!video.videoWidth || !video.videoHeight) return null;
+    const scale = Math.min(1, maxWidth / video.videoWidth);
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+    const ctx = canvas.getContext('2d', { alpha: false });
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return await new Promise(resolve => canvas.toBlob(resolve, type, quality));
+  }
+  async function uploadFrame(){
+    if (uploadFrameBusy || !stream || document.hidden) return;
+    uploadFrameBusy = true;
+    try {
+      const blob = await captureBlob('image/jpeg', 0.45, 480);
+      if(!blob) return;
+      const fd=new FormData();
+      fd.append('image',blob,'frame.jpg');
+      await fetch(`/api/live/frame/${sessionId}`, {method:'POST',body:fd,credentials:'same-origin'}).catch(()=>{});
+    } finally {
+      uploadFrameBusy = false;
+    }
+  }
+  async function recognizeFrame(){
+    if (recognizeFrameBusy || !stream || document.hidden) return;
+    recognizeFrameBusy = true;
+    try {
+      const blob=await captureBlob('image/jpeg', 0.58, 560);
+      if(!blob) return;
+      const fd=new FormData();
+      fd.append('image',blob,'recognize.jpg');
+      fd.append('elapsed_seconds', String(elapsedSeconds()));
+      const res=await fetch(`/api/live/recognize-frame/${sessionId}`, {method:'POST',body:fd,credentials:'same-origin'}).catch(()=>null);
+      if(!res || !res.ok) return;
+      const data=await res.json();
+      const visibleProducts = data.admin_reference_products || data.products || (data.product ? [data.product] : []);
+      renderAdminReferences(visibleProducts);
+      if (data.recognition_clear) {
+        currentProduct = null;
+        updateOverlay(null);
+      }
+    } finally {
+      recognizeFrameBusy = false;
+    }
+  }
+  async function sendMarker(markerType){ const fd=new FormData(); fd.append('marker_type', markerType); fd.append('label', currentProduct?.title || 'Live'); fd.append('product_id', String(currentProduct?.id || 0)); fd.append('elapsed_seconds', String(elapsedSeconds())); await fetch(`/api/live/marker/${sessionId}`, {method:'POST',body:fd,credentials:'same-origin'}); }
+  async function setCurrent(action){ if(!currentProduct?.id) return; const url = action==='vendida' ? `/api/live/mark-sold/${sessionId}` : action==='ignorada' ? `/api/live/skip-current/${sessionId}` : `/api/live/current-product/${sessionId}`; const fd=new FormData(); fd.append('product_id', String(currentProduct.id)); fd.append('elapsed_seconds', String(elapsedSeconds())); if(action!=='vendida' && action!=='ignorada'){ fd.append('action', action); fd.append('notes', action==='fixada' ? 'Fixada no studio da live.' : action); } const res=await fetch(url,{method:'POST',body:fd,credentials:'same-origin'}); if(res.ok){ if(action==='ignorada') updateOverlay(null); await refreshDashboard(); } }
+  async function removeReference(productId) {
+    if (!productId) return;
+    const fd = new FormData();
+    fd.append('product_id', String(productId));
+    fd.append('reason', 'Referência incorreta removida pela administradora');
+    const res = await fetch(`/api/live/remove-reference/${sessionId}`, { method: 'POST', body: fd, credentials: 'same-origin' }).catch(() => null);
+    if (res && res.ok) {
+      const data = await res.json().catch(() => ({}));
+      renderAdminReferences(data.reference_products || []);
+      if (currentProduct && Number(currentProduct.id) === Number(productId)) updateOverlay(null);
+      await refreshDashboard();
+    }
+  }
+  document.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('[data-remove-reference]');
+    if (!btn) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    removeReference(btn.dataset.removeReference);
+  });
+  removeCurrentReferenceBtn?.addEventListener('click', () => removeReference(removeCurrentReferenceBtn.dataset.productId));
+
+  async function refreshDashboard(){
+    if (refreshDashboardBusy || document.hidden) return;
+    refreshDashboardBusy = true;
+    try {
+      const res=await fetch(`/api/live/dashboard/${sessionId}`, {credentials:'same-origin'}).catch(()=>null);
+      if(!res || !res.ok) return;
+      const data=await res.json();
+      renderAdminReferences(data.admin_reference_products || (data.current_product ? [data.current_product] : []));
+      renderComments(data.comments || [], data.reactions || [], data.session?.viewer_count || 0);
+    } finally {
+      refreshDashboardBusy = false;
+    }
+  }
+  adminMessageForm?.addEventListener('submit', async ()=>{ const message=(adminMessageInput.value||'').trim(); if(!message) return; await fetch(`/api/live/marker/${sessionId}`, {method:'POST', body:(()=>{ const f=new FormData(); f.append('marker_type','highlight'); f.append('label',message); f.append('product_id', String(currentProduct?.id || 0)); f.append('elapsed_seconds', String(elapsedSeconds())); return f; })(), credentials:'same-origin'}).catch(()=>{}); adminMessageInput.value=''; });
+  document.getElementById('fixCurrentBtn')?.addEventListener('click', ()=>setCurrent('fixada')); document.getElementById('soldCurrentBtn')?.addEventListener('click', async ()=>{ await sendMarker('valor'); await setCurrent('vendida'); }); document.getElementById('skipCurrentBtn')?.addEventListener('click', ()=>setCurrent('ignorada')); document.querySelectorAll('[data-marker]').forEach(btn=>btn.addEventListener('click', ()=>sendMarker(btn.dataset.marker))); document.querySelectorAll('#adminReactionBar button').forEach(btn=>btn.addEventListener('click', ()=>{ const bubble=document.createElement('div'); bubble.textContent=btn.dataset.emoji || '❤️'; bubble.style.position='absolute'; bubble.style.right=`${20 + Math.random()*30}px`; bubble.style.bottom='0px'; bubble.style.fontSize='2rem'; bubble.style.pointerEvents='none'; bubble.style.transition='all 1.3s ease'; document.querySelector('.live-stage').appendChild(bubble); requestAnimationFrame(()=>{ bubble.style.transform=`translate(${-40 - Math.random()*40}px, ${-140 - Math.random()*80}px)`; bubble.style.opacity='0'; }); setTimeout(()=>bubble.remove(),1300); }));
+  endLiveForm?.addEventListener('submit', async (ev)=>{ if(stopping) return; ev.preventDefault(); stopping=true; try { if(recorder && recorder.state !== 'inactive') { recorder.stop(); await new Promise(resolve=>setTimeout(resolve,1200)); } if(recordingChunks.length) { const blob=new Blob(recordingChunks, {type: recorder?.mimeType || 'video/webm'}); const fd=new FormData(); fd.append('recording', blob, 'live.webm'); await fetch(`/api/live/upload-recording/${sessionId}`, {method:'POST', body:fd, credentials:'same-origin'}).catch(()=>{}); } } finally { stream?.getTracks()?.forEach(t=>t.stop()); endLiveForm.submit(); } });
+  openCameraBtn?.addEventListener('click', () => startCamera(true));
+  if(currentProduct) updateOverlay(currentProduct); else updateOverlay(null);
+  refreshDashboard();
+  startLiveTimers();
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      clearLiveTimers();
+    } else {
+      resumeLiveStudio(true);
+    }
+  });
+  window.addEventListener('pageshow', () => resumeLiveStudio(true));
+  window.addEventListener('focus', () => resumeLiveStudio(false));
+  window.addEventListener('pagehide', () => { clearLiveTimers(); stopCamera(); });
+  window.addEventListener('beforeunload', () => { clearLiveTimers(); stopCamera(); });
+});
+</script>
+
+</body>
+</html>

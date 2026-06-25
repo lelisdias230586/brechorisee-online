@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block page_title %}Repescagem da live{% endblock %}
+{% block content %}
+<style>
+.recap-clip-video{width:100%;border-radius:16px;margin-top:10px;background:#201311}.clip-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#f4ebe6;color:#7b3f2f;font-weight:700;font-size:.86rem}.msg-banner{padding:12px 16px;border-radius:18px;background:#f4ebe6;color:#7a4131;margin-bottom:14px}
+</style>
+{% if msg %}<div class="msg-banner">{{ msg }}</div>{% endif %}
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Repescagem salva</p>
+      <h2>{{ session.title }}</h2>
+      <p class="hint">Use esta tela para postar as peças que apareceram na live e ainda podem gerar venda. Peças vendidas somem automaticamente da repescagem e das referências.</p>
+    </div>
+    <div class="inline-actions">
+      <form method="post" action="/live/repescagem/{{ session.id }}/clips">
+        <button class="btn primary" type="submit">Gerar vídeos curtos das referências</button>
+      </form>
+      <a class="btn" href="/live">Voltar para live</a>
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Busca das clientes</p>
+      <h2>Prints e códigos da live</h2>
+      <p class="hint">Na área da cliente, a lupa da live/repescagem permite digitar código ou enviar um print feito durante a live. O sistema procura a referência, e a cliente pode selecionar ou descartar.</p>
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Peças disponíveis da repescagem</h2>
+  <div class="product-grid">
+    {% for item in items %}
+      <article class="product-card">
+        <a href="/products/{{ item.product_id }}" class="product-photo">
+          {% if item.image_filename %}
+            <img src="{{ url_for('static', path='/uploads/' ~ item.image_filename) }}" alt="{{ item.product_title }}">
+          {% else %}
+            <span>sem foto</span>
+          {% endif %}
+          <em class="status {{ item.current_status or item.status_snapshot }}">{{ item.current_status or item.status_snapshot }}</em>
+        </a>
+        <div class="product-body">
+          <strong>{{ item.product_title }}</strong>
+          <small>{{ item.product_code }} • {{ item.product_price|money }}</small>
+          {% if item.clip_filename %}
+            <span class="clip-badge">🎬 vídeo curto ligado à referência</span>
+            <video class="recap-clip-video" controls src="/static/live/clips/{{ item.clip_filename }}"></video>
+          {% else %}
+            <form method="post" action="/live/items/{{ item.id }}/clip">
+              <button class="btn ghost" type="submit">Gerar vídeo curto desta referência</button>
+            </form>
+          {% endif %}
+          {% if item.current_status == 'vendido' or item.status_snapshot == 'vendido' %}
+          <strong>Já vendido</strong>
+          {% endif %}
+        </div>
+      </article>
+    {% else %}
+      <div class="empty-state">
+        <h3>Nenhuma peça para repescagem.</h3>
+        <p>Fixe peças durante a live para aparecerem aqui.</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Instagram</p>
+      <h2>Legenda pronta para postar</h2>
+      <p class="hint">No celular, o botão Compartilhar abre a folha de compartilhamento. O Instagram pode exigir que você confirme a publicação manualmente.</p>
+    </div>
+  </div>
+  <form method="post" action="/live/repescagem/{{ session.id }}/save">
+    {% for item in items %}
+      <input type="hidden" name="selected_item_ids" value="{{ item.id }}">
+    {% endfor %}
+    <textarea class="copy-box" id="liveCaptionBox" name="caption" rows="12">{{ caption }}</textarea>
+    <div class="inline-actions">
+      <button class="btn" type="button" id="copyLiveCaptionBtn">Copiar legenda</button>
+      <button class="btn primary" type="button" id="shareLiveInstagramBtn">Compartilhar / Instagram</button>
+      <a class="btn" href="{{ instagram_url }}" target="_blank">Abrir Instagram</a>
+      <button class="btn ghost" type="submit">Salvar rascunho</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const box = document.getElementById("liveCaptionBox");
+  const copyBtn = document.getElementById("copyLiveCaptionBtn");
+  const shareBtn = document.getElementById("shareLiveInstagramBtn");
+  copyBtn?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(box.value);
+      copyBtn.textContent = "Copiado!";
+      setTimeout(() => copyBtn.textContent = "Copiar legenda", 1300);
+    } catch (e) {
+      box.select();
+      document.execCommand("copy");
+    }
+  });
+  shareBtn?.addEventListener("click", async () => {
+    const text = box.value;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Repescagem BRECHORISEE", text });
+        return;
+      } catch (e) {}
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      shareBtn.textContent = "Legenda copiada";
+      setTimeout(() => shareBtn.textContent = "Compartilhar / Instagram", 1300);
+    } catch (e) {
+      window.open("https://www.instagram.com/", "_blank");
+    }
+  });
+});
+</script>
+{% endblock %}

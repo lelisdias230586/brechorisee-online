@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>BRECHORISEE Cliente</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.brechorisee.cliente</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Usamos a câmera para fotos, reconhecimento de peças e transmissão da live.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Usamos a galeria para selecionar fotos, vídeos e gravações da live.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Usamos a localização para facilitar entregas com ponto no mapa.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Usamos o microfone para áudio da live e recursos de voz.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Salvamos imagens e vídeos gerados quando você escolher compartilhar ou guardar.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.brechorisee.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>brechorisee</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

@@ -1,0 +1,9 @@
+Os dados ficam aqui:
+
+brechorisee_app/brechorisee.db
+brechorisee_app/static/uploads
+brechorisee_app/static/generated
+brechorisee_app/static/qrcodes
+
+Este pacote já traz essas pastas criadas para você não precisar criar manualmente.
+Se você tiver dados antigos, copie esses itens da pasta antiga para esta nova.

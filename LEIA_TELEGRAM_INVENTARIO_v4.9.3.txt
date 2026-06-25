@@ -1,0 +1,26 @@
+BRECHORISEE v4.9.3
+
+ROTAS NOVAS:
+- /inventario-profissional
+- /telegram
+
+PARA TELEGRAM:
+1. Inicie servidor.
+2. Inicie túnel.
+3. Salve o link real:
+   bash ~/CONFIGURAR_LINK_PUBLICO_BRECHORISEE.sh https://LINK-REAL.lhr.life
+4. Reinicie servidor.
+5. Abra:
+   https://LINK-REAL.lhr.life/telegram
+6. Toque em "Configurar webhook no Telegram".
+7. Teste "Enviar resumo automático".
+
+COMANDOS DO BOT:
+- /start
+- /resumo
+- /estoque
+- /inventario
+- /live
+- /consignado
+- /mensagens
+- /ajuda

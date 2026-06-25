@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block page_title %}Histórico de estoque{% endblock %}
+{% block content %}
+<section class="panel">
+  <form class="search-row history-filter" method="get" action="/stock-history">
+    <select name="status">
+      <option value="todos" {{ 'selected' if status == 'todos' else '' }}>Todos os status</option>
+      <option value="disponivel" {{ 'selected' if status == 'disponivel' else '' }}>Disponíveis</option>
+      <option value="reservado" {{ 'selected' if status == 'reservado' else '' }}>Reservadas</option>
+      <option value="vendido" {{ 'selected' if status == 'vendido' else '' }}>Vendidas</option>
+    </select>
+    <button class="btn primary" type="submit">Filtrar</button>
+    <a class="btn" href="/reports">Ver gráficos</a>
+    <a class="btn ghost" href="/ai">Análise IA</a>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Tempo estocado</p>
+      <h2>Peças por idade no estoque</h2>
+    </div>
+    <span class="hint">{{ rows|length }} registros</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Peça</th>
+          <th>Status</th>
+          <th>Tipo</th>
+          <th>Entrada</th>
+          <th>Venda</th>
+          <th>Dias</th>
+          <th>Custo</th>
+          <th>Venda</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr class="{{ 'danger-row' if row.status != 'vendido' and row.age_days >= 180 else 'warn-row' if row.status != 'vendido' and row.age_days >= 90 else '' }}">
+            <td><a href="/products/{{ row.id }}"><strong>{{ row.title }}</strong><br><small>{{ row.code }}</small></a></td>
+            <td><span class="pill {{ row.status }}">{{ row.status }}</span></td>
+            <td>{{ row.garment_type }}</td>
+            <td>{{ row.created_at|date_br }}</td>
+            <td>{{ row.sold_at|date_br if row.sold_at else '-' }}</td>
+            <td><strong>{{ row.age_days }}</strong></td>
+            <td>{{ row.cost_price|money }}</td>
+            <td>{{ row.sale_price|money }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8">Nenhuma peça encontrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

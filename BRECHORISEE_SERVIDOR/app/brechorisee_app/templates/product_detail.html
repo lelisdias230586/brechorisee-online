@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+{% block page_title %}{{ product.title }}{% endblock %}
+{% block content %}
+<section class="detail-layout">
+  <article class="panel detail-photo">
+    {% if product.image_filename %}
+      <img src="{{ url_for('static', path='/uploads/' ~ product.image_filename) }}" alt="{{ product.title }}">
+    {% else %}
+      <div class="photo-placeholder">sem foto</div>
+    {% endif %}
+  </article>
+
+  <article class="panel detail-info">
+    <div class="detail-head">
+      <div>
+        <p class="eyebrow">{{ product.code }}</p>
+        <h2>{{ product.title }}</h2>
+      </div>
+      <span class="pill {{ product.status }}">{{ product.status }}</span>
+    </div>
+
+    <div class="info-grid">
+      <span>Preço</span><strong>{{ product.sale_price|money }}</strong>
+      <span>Custo/repasse</span><strong>{{ product.cost_price|money }}</strong>
+      <span>Categoria</span><strong>{{ product.category or '-' }}</strong>
+      <span>Tipo</span><strong>{{ product.garment_type or '-' }}</strong>
+      <span>Tamanho</span><strong>{{ product.size or '-' }}</strong>
+      <span>Marca</span><strong>{{ product.brand or '-' }}</strong>
+      <span>Cor</span><strong>{{ product.color or '-' }}</strong>
+      <span>Estado</span><strong>{{ product.condition or '-' }}</strong>
+      <span>Estação/ocasião</span><strong>{{ product.season or '-' }}</strong>
+      <span>Público/estilo</span><strong>{{ product.target_audience or '-' }}</strong>
+      <span>Fornecedora</span><strong>{{ product.supplier_name or '-' }}</strong>
+      <span>Tempo estocado</span><strong>{{ ai.age_days }} dias</strong>
+    </div>
+
+    <section class="ai-box">
+      <div class="ai-score-row">
+        <strong>{{ ai.score }}%</strong>
+        <span>{{ ai.label }}</span>
+      </div>
+      <p class="hint">IA local baseada no histórico do brechorisee, giro de peças parecidas, margem, idade em estoque e palavras configuradas.</p>
+      <div class="ai-columns">
+        <div>
+          <h3>Motivos</h3>
+          <ul>
+            {% for item in ai.reasons %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div>
+          <h3>Ações sugeridas</h3>
+          <ul>
+            {% for item in ai.actions %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      <button class="btn" id="refreshAiBtn" data-product="{{ product.id }}" type="button">Atualizar IA</button>
+      <span id="refreshAiMsg" class="hint"></span>
+    </section>
+
+    <div class="text-block">
+      <h3>Tags de estilo</h3>
+      <p>{{ product.style_tags or 'Não informado.' }}</p>
+    </div>
+
+    <div class="text-block">
+      <h3>Medidas</h3>
+      <p>{{ product.measurements or 'Não informado.' }}</p>
+    </div>
+
+    <div class="text-block">
+      <h3>Características</h3>
+      <p>{{ product.characteristics or 'Não informado.' }}</p>
+    </div>
+
+    <form method="post" action="/products/{{ product.id }}/status" class="status-form">
+      <select name="status">
+        <option value="disponivel" {{ 'selected' if product.status == 'disponivel' else '' }}>Disponível</option>
+        <option value="reservado" {{ 'selected' if product.status == 'reservado' else '' }}>Reservado</option>
+        <option value="vendido" {{ 'selected' if product.status == 'vendido' else '' }}>Vendido</option>
+        <option value="arquivado" {{ 'selected' if product.status == 'arquivado' else '' }}>Arquivado</option>
+      </select>
+      <button class="btn" type="submit">Atualizar status</button>
+    </form>
+  </article>
+
+  <article class="panel qr-card">
+    <p class="eyebrow">Etiqueta QR Code</p>
+    <img src="{{ url_for('static', path='/qrcodes/' ~ product.code ~ '.png') }}" alt="QR Code {{ product.code }}">
+    <h3>{{ product.code }}</h3>
+    <p>{{ product.title }} • {{ product.sale_price|money }}</p>
+    <button class="btn primary" onclick="window.print()">Imprimir etiqueta</button>
+    <a class="btn ghost wide" href="/cashier">Vender no caixa</a>
+    <a class="btn wide" href="/marketing?product_id={{ product.id }}">Criar post / reel</a>
+    <a class="btn wide" href="/loja/produto/{{ product.code }}" target="_blank">Ver na vitrine online</a>
+  </article>
+</section>
+
+<section class="panel danger-panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Administração</p>
+      <h2>Zona segura de remoção</h2>
+      <p class="hint">Arquivar é o recomendado: a peça sai da vitrine, busca e live, mas fica no histórico. Excluir definitivo remove registros e arquivos locais.</p>
+    </div>
+  </div>
+  <div class="inline-actions">
+    {% if product.status == 'arquivado' %}
+    <form method="post" action="/products/{{ product.id }}/restore">
+      <button class="btn primary" type="submit">Restaurar para disponível</button>
+    </form>
+    {% else %}
+    <form method="post" action="/products/{{ product.id }}/archive">
+      <button class="btn" type="submit">Arquivar peça</button>
+    </form>
+    {% endif %}
+  </div>
+  <form method="post" action="/products/{{ product.id }}/delete" class="delete-product-form" onsubmit="return confirm('Excluir definitivamente esta peça? Essa ação não pode ser desfeita.')">
+    <label>
+      Para excluir definitivamente, digite EXCLUIR
+      <input name="confirm_text" placeholder="EXCLUIR">
+    </label>
+    <button class="btn ghost" type="submit">Excluir definitivamente</button>
+  </form>
+</section>
+
+<section class="panel share-product-panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Compartilhar peça</p>
+      <h2>WhatsApp, Instagram e link da vitrine</h2>
+      <p class="hint">Envie a foto, a oferta, o link da peça e o link que abre o app diretamente neste cadastro.</p>
+    </div>
+  </div>
+
+  <div class="share-product-grid">
+    <article>
+      <label>
+        WhatsApp da cliente
+        <input id="sharePhone" inputmode="tel" placeholder="Ex.: 11999999999">
+      </label>
+      <label>
+        Pergunta ou oferta destacada
+        <textarea id="shareQuestion" rows="4" placeholder="Ex.: Essa peça combina com o estilo que você procura. Quer reservar?">Essa peça combina com seu estilo. Quer que eu reserve para você? ✨</textarea>
+      </label>
+      <label>
+        Link de pagamento / InfinitePay, opcional
+        <input id="sharePaymentLink" inputmode="url" placeholder="Cole aqui o link InfinitePay/cartão se quiser enviar junto">
+      </label>
+      <label>
+        Pix, opcional
+        <input id="sharePixText" placeholder="Chave Pix ou Pix copia e cola">
+      </label>
+      <div class="inline-actions">
+        <button class="btn" type="button" id="updateShareMsgBtn">Atualizar WhatsApp</button>
+        <button class="btn" type="button" id="copyShareMsgBtn">Copiar WhatsApp</button>
+        <button class="btn primary" type="button" id="sendShareWhatsappBtn">Enviar WhatsApp</button>
+      </div>
+      <div class="inline-actions">
+        <button class="btn" type="button" id="updateInstagramMsgBtn">Atualizar Instagram</button>
+        <button class="btn" type="button" id="copyInstagramMsgBtn">Copiar Instagram</button>
+        <a class="btn primary" href="{{ instagram_profile_url }}" target="_blank">Abrir Instagram</a>
+      </div>
+      <p class="hint">Para abrir dentro do app instalado, use: <strong>{{ share_app_url }}</strong></p>
+    </article>
+
+    <article>
+      <label>
+        Mensagem WhatsApp
+        <textarea class="copy-box" id="productShareMessageBox" rows="12">{{ share_text }}</textarea>
+      </label>
+      <label>
+        Mensagem Instagram Direct
+        <textarea class="copy-box" id="instagramShareMessageBox" rows="12">{{ instagram_share_text }}</textarea>
+      </label>
+      <div class="inline-actions">
+        <a class="btn ghost" href="{{ share_public_url }}" target="_blank">Abrir vitrine pública</a>
+        <a class="btn ghost" href="{{ share_local_url }}" target="_blank">Abrir link local</a>
+        <a class="btn ghost" href="{{ share_app_url }}">Abrir no app</a>
+        {% if share_photo_url %}<a class="btn ghost" href="{{ share_photo_url }}" target="_blank">Abrir foto</a>{% endif %}
+      </div>
+    </article>
+  </div>
+
+  <div class="social-resource-grid">
+    <article class="mini-card">
+      <strong>Story/Reel</strong>
+      <p>Gere arte, story ou reel desta peça para postar no Instagram.</p>
+      <a class="btn" href="/marketing?product_id={{ product.id }}">Criar conteúdo</a>
+    </article>
+    <article class="mini-card">
+      <strong>Cliente interessada</strong>
+      <p>Quando a cliente clicar no link, o sistema registra interesse na peça.</p>
+      <a class="btn" href="{{ share_public_url }}" target="_blank">Testar link</a>
+    </article>
+    <article class="mini-card">
+      <strong>Pagamento</strong>
+      <p>Você pode incluir Pix ou link InfinitePay na mensagem da peça.</p>
+      <a class="btn" href="/whatsapp-vendas">Criar pedido WhatsApp</a>
+    </article>
+  </div>
+
+  {% if similar_products %}
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Peças parecidas</p>
+      <h2>Oferecer junto</h2>
+      <p class="hint">Sugestões baseadas em tipo, tamanho, cor ou marca.</p>
+    </div>
+  </div>
+  <div class="product-grid compact-grid">
+    {% for sp in similar_products %}
+      <article class="product-card">
+        <a href="/products/{{ sp.id }}" class="product-photo">
+          {% if sp.image_filename %}
+            <img src="{{ url_for('static', path='/uploads/' ~ sp.image_filename) }}" alt="{{ sp.title }}">
+          {% else %}
+            <span>sem foto</span>
+          {% endif %}
+        </a>
+        <div class="product-body">
+          <strong>{{ sp.title }}</strong>
+          <small>{{ sp.code }} • {{ sp.sale_price|money }}</small>
+          <a class="btn ghost" href="/products/{{ sp.id }}">Enviar esta também</a>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+
+<section class="panel media-panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Arquivos da peça</p>
+      <h2>Fotos e vídeos complementares</h2>
+      <p class="hint">Esses arquivos ajudam no reconhecimento, pesquisa, conferência, divulgação e histórico da peça.</p>
+    </div>
+  </div>
+
+  <div class="media-gallery">
+    {% for item in media %}
+      <article class="media-tile">
+        {% if item.media_type == 'video' %}
+          <video src="{{ url_for('static', path='/uploads/' ~ item.filename) }}" controls preload="metadata"></video>
+        {% else %}
+          <img src="{{ url_for('static', path='/uploads/' ~ item.filename) }}" alt="{{ item.original_filename or product.title }}">
+        {% endif %}
+        <div>
+          <strong>{{ 'Vídeo' if item.media_type == 'video' else 'Foto' }}</strong>
+          <small>{{ item.original_filename or item.filename }}</small>
+          {% if item.notes %}
+            <p>{{ item.notes }}</p>
+          {% endif %}
+        </div>
+      </article>
+    {% else %}
+      <div class="empty-state compact">
+        <h3>Nenhum arquivo complementar.</h3>
+        <p>Adicione mais fotos ou vídeos para facilitar reconhecimento, pesquisa e conferência.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <form class="media-upload-form" method="post" action="/products/{{ product.id }}/media" enctype="multipart/form-data">
+    <label class="camera-field">
+      <span class="camera-card">
+        <input class="mobile-media-input" type="file" name="media_files" accept="image/*,video/*" multiple data-preview-list="#detailMediaPreview">
+        <span class="camera-card-title">📎 Adicionar fotos/vídeos</span>
+        <small>Selecione várias fotos da galeria ou vídeos curtos da peça.</small>
+        <div id="detailMediaPreview" class="media-preview-grid" aria-live="polite"></div>
+      </span>
+    </label>
+    <label>
+      Observação dos novos arquivos
+      <textarea name="media_notes" placeholder="Ex.: etiqueta da marca, detalhe da costura, avaria, vídeo do caimento..."></textarea>
+    </label>
+    <button class="btn primary" type="submit">Salvar arquivos complementares</button>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.querySelector("#refreshAiBtn");
+  const msg = document.querySelector("#refreshAiMsg");
+  if (!btn) return;
+  btn.addEventListener("click", async () => {
+    msg.textContent = "Atualizando...";
+    const res = await fetch(`/api/products/${btn.dataset.product}/ai`, { method: "POST" });
+    const data = await res.json();
+    if (data.ok) {
+      msg.textContent = `Salvo: ${data.ai.score}% • ${data.ai.label}`;
+    } else {
+      msg.textContent = data.message || "Erro ao atualizar.";
+    }
+  });
+
+  const shareBox = document.querySelector("#productShareMessageBox");
+  const instagramBox = document.querySelector("#instagramShareMessageBox");
+  const sharePhone = document.querySelector("#sharePhone");
+  const shareQuestion = document.querySelector("#shareQuestion");
+  const sharePaymentLink = document.querySelector("#sharePaymentLink");
+  const sharePixText = document.querySelector("#sharePixText");
+  const updateShareBtn = document.querySelector("#updateShareMsgBtn");
+  const copyShareBtn = document.querySelector("#copyShareMsgBtn");
+  const sendShareBtn = document.querySelector("#sendShareWhatsappBtn");
+  const updateInstagramBtn = document.querySelector("#updateInstagramMsgBtn");
+  const copyInstagramBtn = document.querySelector("#copyInstagramMsgBtn");
+
+  async function updateSocialMessage(channel) {
+    const target = channel === "instagram" ? instagramBox : shareBox;
+    if (!target) return;
+    const params = new URLSearchParams({
+      question: shareQuestion?.value || "",
+      channel,
+      payment_link: sharePaymentLink?.value || "",
+      pix_text: sharePixText?.value || ""
+    });
+    const res = await fetch(`/api/products/{{ product.id }}/share?${params.toString()}`);
+    const data = await res.json();
+    if (data.ok) target.value = data.message;
+  }
+
+  async function copyTextArea(target, btn, originalText) {
+    if (!target) return;
+    target.select();
+    target.setSelectionRange(0, target.value.length);
+    try {
+      await navigator.clipboard.writeText(target.value);
+      btn.textContent = "Copiado!";
+      setTimeout(() => btn.textContent = originalText, 1300);
+    } catch (e) {
+      document.execCommand("copy");
+    }
+  }
+
+  updateShareBtn?.addEventListener("click", () => updateSocialMessage("whatsapp"));
+  updateInstagramBtn?.addEventListener("click", () => updateSocialMessage("instagram"));
+  copyShareBtn?.addEventListener("click", () => copyTextArea(shareBox, copyShareBtn, "Copiar WhatsApp"));
+  copyInstagramBtn?.addEventListener("click", () => copyTextArea(instagramBox, copyInstagramBtn, "Copiar Instagram"));
+  sendShareBtn?.addEventListener("click", async () => {
+    await updateSocialMessage("whatsapp");
+    const phone = (sharePhone?.value || "").replace(/\D/g, "");
+    const prefix = phone ? `https://wa.me/55${phone}?text=` : "https://wa.me/?text=";
+    window.open(prefix + encodeURIComponent(shareBox?.value || ""), "_blank");
+  });
+
+});
+</script>
+{% endblock %}

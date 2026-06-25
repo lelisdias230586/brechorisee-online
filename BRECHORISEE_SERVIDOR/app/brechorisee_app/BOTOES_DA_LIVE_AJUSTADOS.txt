@@ -1,0 +1,19 @@
+AJUSTE DOS BOTÕES DA LIVE
+
+Foi reorganizada a tela /live para celular, com foco nos botões principais da live.
+
+Agora a área da live mostra de forma mais clara:
+- Iniciar live
+- Abrir studio ao vivo
+- Tela da cliente
+- Reconhecer por foto
+- Encerrar live
+- Pós-live
+- Repescagem
+
+Também foram feitos ajustes extras:
+- layout mobile mais limpo;
+- resumo rápido da live;
+- fluxo sugerido visível;
+- atualização do service worker para evitar tela antiga em cache;
+- liberação correta de microfone no cabeçalho Permissions-Policy.

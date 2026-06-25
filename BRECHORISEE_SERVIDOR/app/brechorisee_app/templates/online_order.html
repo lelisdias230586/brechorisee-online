@@ -1,0 +1,84 @@
+{% extends "public_store_base.html" %}
+{% block store_content %}
+<style>
+.tracking-card{margin:16px 0;padding:18px;border-radius:26px;background:#fff;border:1px solid #eadfd8;box-shadow:0 18px 60px rgba(95,45,30,.10)}
+.tracking-map{height:180px;border-radius:24px;position:relative;overflow:hidden;background:linear-gradient(135deg,#dff3e8,#eef4ff);border:1px solid rgba(80,115,92,.18)}
+.tracking-map:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.65) 0 2px,transparent 2px 56px),repeating-linear-gradient(0deg,rgba(255,255,255,.75) 0 2px,transparent 2px 48px);opacity:.82}
+.tracking-road{position:absolute;left:12%;right:12%;top:54%;height:8px;border-radius:999px;background:rgba(31,23,20,.18)}
+.tracking-road span{display:block;height:100%;width:var(--progress,30%);border-radius:999px;background:linear-gradient(90deg,#ad503d,#1f1714)}
+.tracking-pin{position:absolute;width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 10px 25px rgba(0,0,0,.22)}
+.tracking-pin:after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;left:10px;top:10px}
+.tracking-pin.store{left:10%;top:44%;background:#1f1714}.tracking-pin.client{right:10%;top:22%;background:#ad503d}
+.tracking-truck{position:absolute;left:calc(12% + (var(--progress,30%) * .72));top:39%;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#fff;box-shadow:0 12px 30px rgba(0,0,0,.20);font-size:22px}
+.tracking-meta{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.tracking-meta span{padding:8px 12px;border-radius:999px;background:#fff8f4;color:#734033;font-weight:700}
+.tracking-progress{height:10px;border-radius:999px;background:#eadfd8;overflow:hidden;margin:12px 0}.tracking-progress span{display:block;height:100%;width:var(--progress,30%);background:linear-gradient(90deg,#ad503d,#1f1714)}
+.tracking-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:.8rem;color:#7c6b64}.tracking-steps b{display:block;color:#1f1714}
+@media(max-width:720px){.tracking-steps{grid-template-columns:1fr 1fr}.tracking-map{height:150px}}
+</style>
+<section class="panel online-order-result modern-order-result">
+  <p class="eyebrow">Pedido {{ order.order_code }}</p>
+  <h1>Pedido recebido ✨</h1>
+  <p>Status: <strong>{{ status_label }}</strong></p>
+  <p>Total: <strong>{{ order.total|money }}</strong></p>
+  {% if order.delivery_method == 'entrega' %}
+    <div class="tracking-card" style="--progress:{{ tracking.progress if tracking else 18 }}%;">
+      <p class="eyebrow">Aproximação da entrega</p>
+      <h2>{{ tracking.stage if tracking else 'Pedido recebido' }}</h2>
+      <p>{{ tracking.message if tracking else 'Acompanhe sua entrega pelo app BRECHORISEE.' }}</p>
+      <div class="tracking-map" aria-label="Mapa aproximado da entrega">
+        <span class="tracking-road"><span></span></span>
+        <span class="tracking-pin store" title="BRECHORISEE"></span>
+        <span class="tracking-truck">🚚</span>
+        <span class="tracking-pin client" title="Você"></span>
+      </div>
+      <div class="tracking-meta">
+        <span>{{ tracking.eta if tracking else 'Aguardando separação' }}</span>
+        {% if tracking and tracking.updated_at %}<span>Atualizado: {{ tracking.updated_at }}</span>{% endif %}
+      </div>
+      <div class="tracking-progress"><span></span></div>
+      <div class="tracking-steps">
+        <span><b>1</b>Pedido</span>
+        <span><b>2</b>Separado</span>
+        <span><b>3</b>Em entrega</span>
+        <span><b>4</b>Entregue</span>
+      </div>
+      {% if order.address %}<p class="hint">Destino: {{ order.address }}</p>{% endif %}
+      <div class="inline-actions">
+        {% if tracking and tracking.maps_url %}<a class="btn" href="{{ tracking.maps_url }}" target="_blank" rel="noopener">Abrir destino no Google Maps</a>{% endif %}
+        {% if tracking and tracking.waze_url %}<a class="btn ghost" href="{{ tracking.waze_url }}" target="_blank" rel="noopener">Abrir no Waze</a>{% endif %}
+      </div>
+    </div>
+  {% endif %}
+  <div class="order-next-steps">
+    <span>1. Envie a mensagem para a loja pelo WhatsApp</span>
+    <span>2. Faça Pix ou cartão conforme combinado</span>
+    <span>3. Aguarde a confirmação da reserva/pagamento</span>
+  </div>
+
+  <div class="cart-items">
+    {% for item in items %}
+      <article class="cart-item">
+        {% if item.image_filename %}<img src="{{ url_for('static', path='/uploads/' ~ item.image_filename) }}" alt="{{ item.title }}">{% endif %}
+        <div>
+          <strong>{{ item.title }}</strong>
+          <small>{{ item.code }} • {{ item.size or '-' }} • {{ item.brand or '-' }}</small>
+          <b>{{ item.price|money }}</b>
+          <small>Reservada para {{ order.customer_name or 'cliente' }}</small>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+
+  <div class="text-block">
+    <h3>Mensagem pronta para enviar à loja</h3>
+    <p class="hint">O botão abaixo abre o WhatsApp da BRECHORISEE com seu pedido. Não envia para o seu próprio número.</p>
+    <textarea id="orderMessage" class="copy-box" rows="12">{{ message }}</textarea>
+    <div class="inline-actions">
+      <button class="btn" type="button" onclick="navigator.clipboard.writeText(document.getElementById('orderMessage').value)">Copiar mensagem</button>
+      <a class="btn primary" href="{{ whatsapp_url }}" target="_blank" rel="noopener">Enviar para a loja</a>
+      {% if order.payment_link %}<a class="btn" href="{{ order.payment_link }}" target="_blank" rel="noopener">Pagar no cartão</a>{% endif %}
+      <a class="btn ghost" href="/loja">Voltar à vitrine</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

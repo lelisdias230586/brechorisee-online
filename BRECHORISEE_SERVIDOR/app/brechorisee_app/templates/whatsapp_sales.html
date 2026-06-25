@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block page_title %}Vendas pelo WhatsApp{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">WhatsApp + InfinitePay + Pix</p>
+      <h2>Montar pedido e enviar cobrança</h2>
+      <p class="hint">Selecione as peças, escolha Pix ou link InfinitePay/cartão e envie a mensagem pronta com fotos e localização de retirada.</p>
+    </div>
+  </div>
+
+  <form class="search-row whatsapp-search" method="get" action="/whatsapp-vendas">
+    <input name="q" value="{{ q }}" autocomplete="off" inputmode="search" placeholder="Buscar peças disponíveis por código, cor, marca, tamanho, estilo...">
+    <select name="status">
+      <option value="ativos" {{ 'selected' if status == 'ativos' else '' }}>Pedidos ativos</option>
+      <option value="todos" {{ 'selected' if status == 'todos' else '' }}>Todos</option>
+      {% for key, label in statuses.items() %}
+        <option value="{{ key }}" {{ 'selected' if status == key else '' }}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn primary" type="submit">Buscar</button>
+  </form>
+</section>
+
+<section class="panel whatsapp-order-builder">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Novo pedido</p>
+      <h2>Cliente comprou pelo WhatsApp</h2>
+    </div>
+  </div>
+
+  <form method="post" action="/whatsapp-vendas/create" class="whatsapp-builder-form">
+    <article class="panel inner-panel">
+      <h3>Cliente e pagamento</h3>
+      <label>
+        Nome da cliente
+        <input name="customer_name" list="customerNames" placeholder="Ex.: Maria">
+        <datalist id="customerNames">
+          {% for c in customers %}
+            <option value="{{ c.name }}">
+          {% endfor %}
+        </datalist>
+      </label>
+      <label>
+        WhatsApp
+        <input name="phone" inputmode="tel" placeholder="Ex.: 11999999999">
+      </label>
+      <label>
+        Forma de pagamento
+        <select name="payment_method">
+          <option value="Pix">Pix</option>
+          <option value="Cartão - InfinitePay">Cartão - InfinitePay</option>
+          <option value="Pix + Cartão">Pix + Cartão</option>
+          <option value="Dinheiro na entrega">Dinheiro na entrega</option>
+        </select>
+      </label>
+      <label>
+        Link InfinitePay/cartão
+        <input name="payment_link" inputmode="url" placeholder="Cole aqui o link gerado no InfinitePay">
+      </label>
+      <label>
+        Chave Pix
+        <input name="pix_key" placeholder="Sua chave Pix">
+      </label>
+      <label>
+        Pix copia e cola
+        <textarea name="pix_copy_paste" rows="3" placeholder="Cole aqui o Pix copia e cola, se tiver"></textarea>
+      </label>
+      <label>
+        Reserva por quantas horas?
+        <input name="reservation_hours" type="number" min="1" max="168" value="24">
+      </label>
+    </article>
+
+    <article class="panel inner-panel">
+      <h3>Entrega ou retirada</h3>
+      <label>
+        Tipo
+        <select name="delivery_type" id="deliveryTypeSelect">
+          <option value="retirada">Retirada</option>
+          <option value="entrega">Entrega</option>
+        </select>
+      </label>
+      <label>
+        Localização para retirada
+        <input name="pickup_location" placeholder="Endereço da loja ou link do Google Maps">
+      </label>
+      <label>
+        Endereço de entrega
+        <textarea name="address" rows="3" placeholder="Rua, número, bairro, cidade, referência"></textarea>
+      </label>
+      <label>
+        Observações
+        <textarea name="notes" rows="3" placeholder="Ex.: cliente pediu para retirar amanhã, entregar após 18h..."></textarea>
+      </label>
+      <p class="hint">Se for retirada, a mensagem pronta inclui a localização. Se for entrega, inclui o endereço e depois pode virar entrega no módulo Entregas.</p>
+    </article>
+
+    <article class="panel inner-panel whatsapp-products">
+      <h3>Peças disponíveis</h3>
+      <p class="hint">Marque todas as peças compradas no mesmo pedido.</p>
+      <div class="whatsapp-product-list">
+        {% for p in products %}
+          <label class="whatsapp-product-item">
+            <input type="checkbox" name="product_ids" value="{{ p.id }}">
+            <span class="mini-photo">
+              {% if p.image_filename %}
+                <img src="{{ url_for('static', path='/uploads/' ~ p.image_filename) }}" alt="{{ p.title }}">
+              {% else %}
+                sem foto
+              {% endif %}
+            </span>
+            <span>
+              <strong>{{ p.code }} • {{ p.title }}</strong>
+              <small>{{ p.garment_type or p.category or 'Peça' }} • {{ p.size or 'tam. único' }} • {{ p.color or '-' }}</small>
+            </span>
+            <b>{{ p.sale_price|money }}</b>
+          </label>
+        {% else %}
+          <div class="empty-state compact">
+            <h3>Nenhuma peça disponível encontrada.</h3>
+            <p>Busque por outro termo ou cadastre peças.</p>
+          </div>
+        {% endfor %}
+      </div>
+      <button class="btn primary wide" type="submit">Criar pedido e gerar mensagem</button>
+    </article>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Pedidos</p>
+      <h2>WhatsApp em andamento</h2>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Pedido</th>
+          <th>Cliente</th>
+          <th>Status</th>
+          <th>Peças</th>
+          <th>Total</th>
+          <th>Pagamento</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+          <tr>
+            <td>#{{ o.id }}</td>
+            <td>{{ o.customer_name or '-' }}<br><small>{{ o.phone or '' }}</small></td>
+            <td><span class="delivery-status status-{{ o.status }}">{{ o.status|whatsapp_order_label }}</span></td>
+            <td>{{ o.items_count }}</td>
+            <td>{{ o.total|money }}</td>
+            <td>{{ o.payment_method or '-' }}</td>
+            <td><a class="btn ghost" href="/whatsapp-vendas/{{ o.id }}">Abrir</a></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7">Nenhum pedido encontrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

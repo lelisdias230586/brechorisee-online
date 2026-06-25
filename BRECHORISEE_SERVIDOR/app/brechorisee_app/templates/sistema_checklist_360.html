@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block page_title %}Checklist técnico{% endblock %}
+{% block content %}
+<section class="panel hero-panel">
+  <div>
+    <p class="eyebrow">Diagnóstico</p>
+    <h2>Verifique APK, banco, link público e módulos.</h2>
+    <p>Use esta tela sempre antes de enviar link para clientes ou instalar APK.</p>
+  </div>
+  <button class="btn primary" id="runCheck" type="button">Rodar checklist</button>
+</section>
+
+<section class="panel" id="checkResult">
+  <p class="hint">Clique em rodar checklist.</p>
+</section>
+
+<script>
+async function runCheck(){
+  const res = await fetch('/api/sistema/checklist');
+  const out = await res.json();
+  document.getElementById('checkResult').innerHTML = `
+    <p class="eyebrow">Versão ${out.version}</p>
+    <h2>${out.ok ? 'Tudo certo' : 'Atenção: existe pendência'}</h2>
+    <div class="quick-grid">
+      ${(out.checks||[]).map(c=>`<article class="quick-card ${c.ok ? 'ok' : 'danger'}"><strong>${c.ok ? '✅' : '⚠️'} ${c.name}</strong><small>${c.detail}</small>${c.fix ? `<small><b>Como corrigir:</b> ${c.fix}</small>` : ''}</article>`).join('')}
+    </div>`;
+}
+document.getElementById('runCheck').addEventListener('click', runCheck);
+runCheck();
+</script>
+{% endblock %}

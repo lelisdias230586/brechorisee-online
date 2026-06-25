@@ -1,0 +1,11 @@
+BRECHORISEE Cliente
+
+Este projeto gera o APK BRECHORISEE_CLIENTE.apk.
+
+Nuvem padrão:
+https://brechorisee-online.onrender.com
+
+Uso: clientes. Abre somente a área da cliente/vitrine/sacola/pedidos/novidades, sem acesso ao sistema administrativo.
+
+Compilar no Windows:
+COMPILAR_APK_WINDOWS.bat

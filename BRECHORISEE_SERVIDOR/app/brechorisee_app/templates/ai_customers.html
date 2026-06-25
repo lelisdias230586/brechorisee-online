@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block page_title %}IA clientes{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Recomendações inteligentes</p>
+      <h2>Enviar só para quem combina</h2>
+      <p class="hint">A IA local cruza compras, preferências, lista de desejos, tamanho, cor, marca, estilo e faixa de preço. Assim a cliente recebe mensagens personalizadas e menos massantes.</p>
+    </div>
+  </div>
+  <form class="search-row" method="get" action="/ia-clientes">
+    <select name="product_id">
+      <option value="">Escolha uma peça disponível</option>
+      {% for p in products %}
+        <option value="{{ p.id }}" {{ 'selected' if selected and selected.id == p.id else '' }}>{{ p.code }} • {{ p.title }} • {{ p.sale_price|money }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn primary" type="submit">Analisar clientes</button>
+    {% if selected %}
+      <button class="btn" type="submit" form="generateNotificationsForm">Gerar mensagens</button>
+    {% endif %}
+  </form>
+  {% if selected %}
+    <form id="generateNotificationsForm" method="post" action="/ia-clientes/gerar/{{ selected.id }}"></form>
+  {% endif %}
+</section>
+
+{% if selected %}
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Peça analisada</p>
+      <h2>{{ selected.title }}</h2>
+      <p class="hint">{{ selected.code }} • {{ selected.garment_type or selected.category or 'Peça' }} • {{ selected.size or 'tam. único' }} • {{ selected.sale_price|money }}</p>
+    </div>
+  </div>
+  <div class="ai-client-grid">
+    {% for item in recommendations %}
+      <article class="ai-client-card">
+        <div class="ai-client-score">
+          <strong>{{ item.match.score }}%</strong>
+          <span>{{ item.match.label }}</span>
+        </div>
+        <h3>{{ item.account.name }}</h3>
+        <p class="hint">{{ item.account.phone or item.account.email or 'sem contato' }}</p>
+        <div class="chip-list">
+          {% for reason in item.match.reasons %}
+            <span>{{ reason }}</span>
+          {% endfor %}
+        </div>
+        <label>
+          Mensagem personalizada
+          <textarea rows="6" readonly>{{ item.message }}</textarea>
+        </label>
+        <div class="inline-actions">
+          <button class="btn ghost copy-message" type="button">Copiar mensagem</button>
+          {% if item.account.phone %}
+            <a class="btn primary" target="_blank" href="https://wa.me/{{ item.account.phone|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '') }}?text={{ item.message|urlencode }}">WhatsApp</a>
+          {% endif %}
+        </div>
+      </article>
+    {% else %}
+      <div class="empty-state compact">
+        <h3>Nenhuma cliente com compatibilidade suficiente.</h3>
+        <p>Cadastre preferências, vendas ou lista de desejos para a IA aprender melhor.</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Perfil automático</p>
+      <h2>Clientes e peças recomendadas</h2>
+      <p class="hint">Resumo dos gostos de cada cliente e as melhores peças disponíveis para oferecer.</p>
+    </div>
+  </div>
+  <div class="customer-ai-list">
+    {% for c in customer_cards %}
+      <article class="customer-ai-row">
+        <div>
+          <h3>{{ c.account.name }}</h3>
+          <p class="hint">{{ c.account.phone or c.account.email or 'sem contato' }} • {{ c.profile.items_count }} peça(s) comprada(s) • gasto aprox. {{ c.profile.total_spent|money }}</p>
+          <div class="chip-list">
+            {% for tag in c.profile.tags[:10] %}
+              <span>{{ tag }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <strong>Recomendar agora</strong>
+          {% for rec in c.best %}
+            <p class="recommend-line">{{ rec.product.title }} • {{ rec.match.score }}% • {{ rec.product.sale_price|money }}</p>
+          {% else %}
+            <p class="hint">Ainda sem recomendação forte.</p>
+          {% endfor %}
+        </div>
+      </article>
+    {% else %}
+      <div class="empty-state compact">
+        <h3>Nenhuma cliente cadastrada.</h3>
+        <p>Clientes da área online aparecerão aqui.</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".copy-message").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const txt = btn.closest(".ai-client-card")?.querySelector("textarea")?.value || "";
+      try {
+        await navigator.clipboard.writeText(txt);
+        btn.textContent = "Copiado!";
+        setTimeout(() => btn.textContent = "Copiar mensagem", 1200);
+      } catch (e) {
+        alert(txt);
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block page_title %}Consignado profissional{% endblock %}
+{% block content %}
+<section class="panel hero-panel">
+  <div>
+    <p class="eyebrow">BRECHORISEE v4.9.2</p>
+    <h2>Consignado / montante profissional</h2>
+    <p>Controle saldo da cliente, entradas, retiradas, devoluções, ajustes, fechamento e recibo final.</p>
+  </div>
+  <form class="search-row compact-search" method="get" action="/consignado-profissional">
+    <input name="q" value="{{ q }}" placeholder="Buscar cliente, telefone ou @instagram">
+    <button class="btn primary" type="submit">Buscar</button>
+  </form>
+</section>
+
+<section class="grid two-columns">
+  <article class="panel">
+    <p class="eyebrow">Cliente</p>
+    <label>Selecione a cliente
+      <select id="customerId">
+        {% for c in customers %}
+          <option value="{{ c.id }}">{{ c.name }} — saldo {{ c.balance|money }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div id="summaryBox" class="result-box">
+      <p>Selecione uma cliente para carregar o resumo.</p>
+    </div>
+    <div class="action-stack">
+      <button class="btn primary" type="button" onclick="loadSummary()">Atualizar saldo</button>
+      <button class="btn ghost" type="button" onclick="openReceipt()">Ver recibo</button>
+    </div>
+  </article>
+
+  <article class="panel">
+    <p class="eyebrow">Registrar movimento</p>
+    <form id="movementForm" class="stack-form">
+      <input type="hidden" name="customer_id" id="movementCustomerId">
+      <label>Tipo
+        <select name="movement_type">
+          <option value="credito">Entrada de montante</option>
+          <option value="devolucao">Devolução / crédito para cliente</option>
+          <option value="pagamento_cliente">Pagamento / acerto recebido</option>
+          <option value="debito">Saída manual</option>
+          <option value="taxa">Taxa / ajuste de débito</option>
+        </select>
+      </label>
+      <label>Valor<input name="amount" inputmode="decimal" placeholder="Ex.: 150,00"></label>
+      <label>Observação<input name="notes" placeholder="Ex.: acerto da live, devolução, frete, desconto"></label>
+      <button class="btn primary" type="submit">Salvar movimento</button>
+    </form>
+    <div id="movementResult" class="result-box"></div>
+  </article>
+</section>
+
+<section class="panel">
+  <p class="eyebrow">Baixar peça por código/QR</p>
+  <form id="scanForm492" class="stack-form">
+    <input type="hidden" name="customer_id" id="scanCustomerId">
+    <label>Código/QR da peça<input name="code" autocapitalize="characters" placeholder="Ex.: BLUSA-001"></label>
+    <label>Valor manual opcional<input name="amount" inputmode="decimal" placeholder="vazio = preço da peça"></label>
+    <button class="btn primary" type="submit">Debitar peça e vender</button>
+  </form>
+  <div id="scanResult492" class="result-box"></div>
+</section>
+
+<section class="panel">
+  <p class="eyebrow">Fechamento</p>
+  <form id="closingForm" class="stack-form">
+    <input type="hidden" name="customer_id" id="closingCustomerId">
+    <label>Observação do fechamento
+      <textarea name="notes" rows="3" placeholder="Ex.: fechamento da live de hoje, saldo final conferido com a cliente"></textarea>
+    </label>
+    <button class="btn primary" type="submit">Gerar fechamento</button>
+  </form>
+  <div id="closingResult" class="result-box"></div>
+</section>
+
+<section class="panel">
+  <p class="eyebrow">Fechamentos recentes</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Data</th><th>Cliente</th><th>Status</th><th>Saldo final</th><th>Obs.</th></tr></thead>
+      <tbody>
+      {% for f in closings %}
+        <tr>
+          <td>{{ f.created_at }}</td>
+          <td>{{ f.customer_name }}</td>
+          <td>{{ f.status }}</td>
+          <td>{{ f.final_balance|money }}</td>
+          <td>{{ f.notes or '' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<style>
+.action-stack{display:grid;gap:10px;margin-top:12px}
+.action-stack .btn{width:100%;justify-content:center}
+.movement-list{display:grid;gap:8px;margin-top:12px}
+.movement-item{border:1px solid #ead8d0;border-radius:14px;padding:10px;background:#fffaf8}
+.movement-item strong{display:block}
+.balance-positive{color:#087a35;font-weight:800}
+.balance-negative{color:#b42318;font-weight:800}
+.balance-zero{color:#444;font-weight:800}
+</style>
+
+<script>
+function brMoney(v){ return Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function selectedCustomer(){ return document.getElementById('customerId').value; }
+function syncCustomerIds(){
+  const id = selectedCustomer();
+  document.getElementById('movementCustomerId').value = id;
+  document.getElementById('scanCustomerId').value = id;
+  document.getElementById('closingCustomerId').value = id;
+}
+async function postJson(url, form){
+  const data = Object.fromEntries(new FormData(form).entries());
+  const res = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  return await res.json();
+}
+async function loadSummary(){
+  syncCustomerIds();
+  const id = selectedCustomer();
+  if(!id){ return; }
+  const res = await fetch(`/api/consignado-profissional/resumo/${id}`, {cache:'no-store'});
+  const out = await res.json();
+  const box = document.getElementById('summaryBox');
+  if(!out.ok){ box.innerHTML = `<p class="alert error">${out.detail || out.message || 'Erro ao carregar.'}</p>`; return; }
+  const cls = out.balance > 0 ? 'balance-positive' : out.balance < 0 ? 'balance-negative' : 'balance-zero';
+  const recent = (out.movements || []).slice(0,8).map(m => `
+    <div class="movement-item">
+      <strong>${m.movement_type} • ${brMoney(m.amount)} • saldo ${brMoney(m.balance_after)}</strong>
+      <small>${m.created_at || ''} ${m.code ? '• ' + m.code : ''}</small>
+      <p>${m.notes || ''}</p>
+    </div>`).join('');
+  box.innerHTML = `
+    <h3>${out.customer.name || 'Cliente'}</h3>
+    <p class="${cls}">Saldo atual: ${brMoney(out.balance)}</p>
+    <p>Entradas: ${brMoney(out.credit_total)} • Retiradas: ${brMoney(out.debit_total)}</p>
+    <p><strong>${out.status_label}</strong><br>${out.next_action}</p>
+    <div class="movement-list">${recent || '<p>Nenhum movimento ainda.</p>'}</div>`;
+}
+function openReceipt(){
+  const id = selectedCustomer();
+  if(id) window.open(`/consignado-profissional/recibo/${id}`, '_blank');
+}
+document.getElementById('customerId').addEventListener('change', loadSummary);
+document.getElementById('movementForm').addEventListener('submit', async ev=>{
+  ev.preventDefault(); syncCustomerIds();
+  const out = await postJson('/api/consignado-profissional/movimento', ev.target);
+  document.getElementById('movementResult').innerHTML = out.ok ? `<p class="success">${out.message}<br>Saldo: ${brMoney(out.balance)}</p>` : `<p class="alert error">${out.message || out.detail}</p>`;
+  if(out.ok) loadSummary();
+});
+document.getElementById('scanForm492').addEventListener('submit', async ev=>{
+  ev.preventDefault(); syncCustomerIds();
+  const out = await postJson('/api/consignado/escanear', ev.target);
+  document.getElementById('scanResult492').innerHTML = out.ok ? `<p class="success">${out.message}<br>Venda: ${out.sale_code}<br>Saldo: ${brMoney(out.balance)}</p>` : `<p class="alert error">${out.message || out.detail}</p>`;
+  if(out.ok) loadSummary();
+});
+document.getElementById('closingForm').addEventListener('submit', async ev=>{
+  ev.preventDefault(); syncCustomerIds();
+  const out = await postJson('/api/consignado-profissional/fechamento', ev.target);
+  document.getElementById('closingResult').innerHTML = out.ok ? `<p class="success">Fechamento #${out.receipt.closing_id} gerado.<br>Saldo final: ${brMoney(out.receipt.final_balance)}</p><p><a class="btn ghost" href="/consignado-profissional/recibo/${selectedCustomer()}" target="_blank">Abrir recibo</a></p>` : `<p class="alert error">${out.message || out.detail}</p>`;
+  if(out.ok) loadSummary();
+});
+syncCustomerIds(); loadSummary();
+</script>
+{% endblock %}

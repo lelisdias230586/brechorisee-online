@@ -1,0 +1,29 @@
+MELHORIAS IMPLEMENTADAS NA ÁREA DE LIVE
+
+1. Botão Iniciar Live na área /live.
+2. Novo Studio da Live com layout inspirado em live social/Instagram:
+   - preview da câmera;
+   - comentários;
+   - reações com emoji;
+   - overlay da peça atual.
+3. Reconhecimento contínuo durante a live:
+   - captura frames da câmera;
+   - atualiza a peça atual automaticamente;
+   - envia snapshot para a tela da cliente.
+4. Nova tela da cliente em /cliente/live:
+   - exibe a live;
+   - mostra a peça reconhecida no canto/abaixo;
+   - troca automaticamente quando outra peça é detectada;
+   - permite comentários e reações.
+5. Pós-live com opções:
+   - arquivar;
+   - excluir;
+   - otimizar.
+6. Otimização de vídeo:
+   - usa marcadores da live para cortar trechos mais relevantes;
+   - prioriza peças, características, medidas, valor e como usar.
+7. Banco de dados ampliado para suportar:
+   - comentários;
+   - reações;
+   - marcadores;
+   - gravação original e versão otimizada.

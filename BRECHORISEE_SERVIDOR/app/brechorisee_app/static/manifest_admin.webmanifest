@@ -1,0 +1,52 @@
+{
+  "name": "BRECHORISEE Administração",
+  "short_name": "BRECHORISEE Admin",
+  "description": "Sistema BRECHORISEE para estoque, caixa, vendas, etiquetas, IA e gestão.",
+  "start_url": "/admin-acesso",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fbf6ef",
+  "theme_color": "#a84d3a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Entrar no admin",
+      "url": "/admin-acesso",
+      "description": "Abrir acesso administrativo"
+    },
+    {
+      "name": "Live Studio",
+      "url": "/live",
+      "description": "Iniciar live com reconhecimento e chat"
+    },
+    {
+      "name": "Cadastrar peça",
+      "url": "/products/new",
+      "description": "Cadastrar peça com foto do celular"
+    },
+    {
+      "name": "Caixa",
+      "url": "/cashier",
+      "description": "Abrir caixa"
+    },
+    {
+      "name": "Vendas online",
+      "url": "/loja-admin",
+      "description": "Gerenciar pedidos da vitrine"
+    }
+  ]
+}

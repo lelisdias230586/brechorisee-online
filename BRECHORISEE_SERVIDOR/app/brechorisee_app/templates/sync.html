@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block page_title %}Sincronização{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Android • Local • Nuvem</p>
+      <h2>Status de sincronização</h2>
+      <p class="hint">Sincronização automática local ⇄ nuvem ⇄ Android. Cadastros e vendas entram na fila sozinhos e publicam quando houver conexão.</p>
+      <p class="hint"><strong>Nuvem configurada:</strong> {{ cloud_url or 'não configurada' }}</p>
+      <p class="hint"><strong>Última sincronização automática:</strong> {{ last_auto_sync.get('at') or 'agora' }} • {{ last_auto_sync.get('message') or ('OK' if last_auto_sync.get('ok') else 'aguardando') }}</p>
+      {% if last_auto_sync.get('pull_before') %}
+        <p class="hint"><strong>Nuvem lida:</strong> {{ last_auto_sync.get('pull_before', {}).get('cloud_products', 0) }} peça(s) • 
+        <strong>Importadas:</strong> {{ last_auto_sync.get('pull_before', {}).get('imported', 0) }} •
+        <strong>Atualizadas:</strong> {{ last_auto_sync.get('pull_before', {}).get('updated', 0) }} •
+        <strong>Conflitos:</strong> {{ last_auto_sync.get('pull_before', {}).get('conflicts', 0) }}</p>
+      {% endif %}
+    </div>
+    <span class="pill disponivel">Automático a cada {{ auto_interval }}s</span>
+  </div>
+  <div class="stats-grid">
+    <article class="stat-card"><span>Peças locais</span><strong>{{ local_product_total }}</strong><small>{{ local_available_product_total }} disponíveis neste computador</small></article>
+    <article class="stat-card"><span>Publicar na nuvem</span><strong>{{ outbox_counts.get('pendente', 0) + outbox_counts.get('erro', 0) }}</strong><small>Pendências locais</small></article>
+    <article class="stat-card"><span>Sincronizados</span><strong>{{ counts.get('sincronizado', 0) + outbox_counts.get('sincronizado', 0) }}</strong><small>Operações concluídas</small></article>
+    <article class="stat-card"><span>Conflitos/erros</span><strong>{{ counts.get('conflito', 0) + counts.get('erro', 0) + outbox_counts.get('conflito', 0) + outbox_counts.get('erro', 0) }}</strong><small>Precisam revisão</small></article>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Local → Nuvem</p>
+      <h2>Fila de publicação da vitrine</h2>
+      <p class="hint">Tudo que for cadastrado ou vendido em qualquer sistema entra automaticamente na sincronização. Se a internet ou a nuvem estiverem fora, fica pendente e publica sozinho quando voltar.</p>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Data</th><th>Tipo</th><th>Status</th><th>Tentativas</th><th>Erro</th></tr></thead>
+      <tbody>
+      {% for e in outbox_events %}
+        <tr>
+          <td>{{ e.created_at }}</td>
+          <td>{{ e.op_type }}</td>
+          <td><span class="pill {{ e.status }}">{{ e.status }}</span></td>
+          <td>{{ e.attempts }}</td>
+          <td>{{ e.last_error or '-' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5">Nenhuma pendência local para a nuvem.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Dispositivos</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Dispositivo</th><th>Nome</th><th>Última conexão</th><th>Última sync</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for d in devices %}
+        <tr><td>{{ d.device_id }}</td><td>{{ d.device_name or '-' }}</td><td>{{ d.last_seen_at or '-' }}</td><td>{{ d.last_sync_at or '-' }}</td><td>{{ d.status }}</td></tr>
+      {% else %}
+        <tr><td colspan="5">Nenhum dispositivo sincronizado ainda.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Últimas operações</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Data</th><th>Dispositivo</th><th>Tipo</th><th>Status</th><th>Resultado / conflito</th></tr></thead>
+      <tbody>
+      {% for e in events %}
+        <tr>
+          <td>{{ e.created_at }}</td>
+          <td>{{ e.device_id }}</td>
+          <td>{{ e.op_type }}</td>
+          <td><span class="pill {{ e.status }}">{{ e.status }}</span></td>
+          <td>{{ e.conflict_notes or e.result or '-' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5">Nenhuma operação offline recebida.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

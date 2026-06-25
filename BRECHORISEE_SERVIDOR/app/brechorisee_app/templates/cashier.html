@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block page_title %}Caixa{% endblock %}
+{% block content %}
+<section class="cashier-layout">
+  <article class="panel">
+    <p class="eyebrow">Adicionar peça</p>
+    <div class="scan-box">
+      <input id="codeInput" autocomplete="off" autocapitalize="characters" inputmode="text" placeholder="Digite ou leia o QR/código da etiqueta">
+      <button class="btn primary" id="addCodeBtn" type="button">Adicionar</button>
+    </div>
+    <div class="bulk-add-box">
+      <p class="hint">Pode adicionar quantas peças quiser. Todas ficam no mesmo carrinho e o cliente paga tudo junto.</p>
+      <details>
+        <summary>Adicionar várias peças de uma vez</summary>
+        <textarea id="bulkCodesInput" rows="4" autocapitalize="characters" placeholder="Digite ou cole vários códigos, um por linha ou separados por vírgula. Ex.:\nBOLSA-001\nVESTIDO-002\nCALCA-003"></textarea>
+        <div class="inline-actions">
+          <button class="btn primary" id="addBulkCodesBtn" type="button">Adicionar lista ao carrinho</button>
+          <button class="btn ghost" id="clearBulkCodesBtn" type="button">Limpar lista</button>
+        </div>
+      </details>
+    </div>
+
+    <div class="scanner-actions">
+      <button class="btn" id="startScanBtn" type="button">Ler QR/código ao vivo</button>
+      <button class="btn ghost" id="stopScanBtn" type="button">Parar câmera</button>
+    </div>
+    <video id="qrVideo" class="qr-video" playsinline></video>
+    <p class="hint" id="scanHint">A leitura por câmera usa o recurso BarcodeDetector do navegador. Caso não apareça, digite o código manualmente.</p>
+
+    <div class="typed-search-mini">
+      <p class="eyebrow">Procurar digitando</p>
+      <h3>Buscar peça no estoque</h3>
+      <div class="scan-box">
+        <input id="cashierSearchInput" autocomplete="off" inputmode="search" placeholder="Digite tipo, cor, marca, tamanho ou característica">
+        <button class="btn primary" id="cashierSearchBtn" type="button">Pesquisar</button>
+      </div>
+      <p class="hint">Ex.: “vestido preto P”, “jeans wide leg”, “Farm floral” ou código como “VESTIDO-001”. Toque em adicionar para colocar no carrinho.</p>
+      <div id="cashierSearchResults" class="mini-results"></div>
+    </div>
+
+    <div class="recognition-mini">
+      <p class="eyebrow">Etiqueta perdida?</p>
+      <h3>Reconhecer pela foto</h3>
+      <label class="camera-field compact-camera">
+        <span class="camera-card">
+          <input class="mobile-photo-input" type="file" id="cashierImage" accept="image/*" capture="environment" data-preview="#cashierPhotoPreview">
+          <span class="camera-card-title">📸 Tirar foto da peça</span>
+          <small>Use quando a etiqueta sumir.</small>
+          <img id="cashierPhotoPreview" class="photo-preview" alt="Prévia da busca" hidden>
+        </span>
+      </label>
+      <button class="btn" id="cashierRecognizeBtn" type="button">Buscar parecido e adicionar</button>
+      <div id="cashierRecognitionResults" class="mini-results"></div>
+    </div>
+  </article>
+
+  <article class="panel cart-panel">
+    <div class="section-head no-margin">
+      <div>
+        <p class="eyebrow">Venda atual</p>
+        <h2>Carrinho <span id="cartCountBadge" class="cart-count-badge">0 peças</span></h2>
+      </div>
+      <button class="btn ghost" id="clearCartBtn" type="button">Limpar</button>
+    </div>
+    <div id="cartItems" class="cart-items empty">Nenhuma peça adicionada.</div>
+
+    <div class="checkout-box">
+      <label>Cliente<input id="customerInput" placeholder="Opcional"></label>
+      <label>Forma de pagamento
+        <select id="paymentInput">
+          <option>Dinheiro</option>
+          <option>Pix</option>
+          <option>Cartão de débito</option>
+          <option>Cartão de crédito</option>
+          <option>Misto</option>
+        </select>
+      </label>
+
+      <div class="payment-app-box">
+        <label class="checkline">
+          <input type="checkbox" id="paymentAppEnabled">
+          <span>Abrir app da maquininha antes de salvar</span>
+        </label>
+        <p class="hint">Para Pix/cartão, o sistema abre o app da maquininha e só baixa o estoque depois da confirmação.</p>
+        <details id="paymentAppSettings">
+          <summary>Configurar maquininha</summary>
+          <label>Pacote do app da maquininha
+            <input id="paymentAppPackage" autocomplete="off" autocapitalize="none" placeholder="Ex.: br.com.sua.maquininha">
+          </label>
+          <label>Link/deeplink opcional
+            <input id="paymentAppDeeplink" autocomplete="off" autocapitalize="none" placeholder="Ex.: app://payment?amount={amount_cents}&ref={reference}">
+          </label>
+          <p class="hint">Se não souber o pacote/link, deixe vazio e use o botão de teste. Algumas maquininhas só aceitam integração oficial.</p>
+          <div class="inline-actions">
+            <button class="btn" id="choosePaymentAppBtn" type="button">Escolher app instalado</button>
+            <button class="btn" id="savePaymentAppSettingsBtn" type="button">Salvar configuração</button>
+            <button class="btn ghost" id="testPaymentAppBtn" type="button">Testar abrir</button>
+          </div>
+        </details>
+      </div>
+
+      <div id="paymentPendingBox" class="payment-pending" hidden>
+        <strong>Pagamento enviado para a maquininha</strong>
+        <p>Depois que a maquininha aprovar, volte para o BRECHORISEE e toque em confirmar para salvar a venda e dar baixa no estoque.</p>
+        <div class="inline-actions">
+          <button class="btn primary" id="confirmPaymentBtn" type="button">Pagamento confirmado • salvar venda</button>
+          <button class="btn ghost" id="cancelPaymentBtn" type="button">Cancelar</button>
+        </div>
+      </div>
+
+      <label>Desconto<input type="number" step="0.01" id="discountInput" value="0"></label>
+      <label>Valor recebido<input type="number" step="0.01" id="paidInput" value="0"></label>
+      <div class="totals">
+        <span>Subtotal</span><strong id="subtotalText">R$ 0,00</strong>
+        <span>Total</span><strong id="totalText">R$ 0,00</strong>
+        <span>Troco</span><strong id="changeText">R$ 0,00</strong>
+      </div>
+      <button class="btn primary wide" id="checkoutBtn" type="button">Finalizar venda única com todas as peças</button>
+      <p class="hint" id="checkoutMessage"></p>
+    </div>
+  </article>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/cashier.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BRECHORISEE - Inventário Profissional</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body{font-family:Arial,sans-serif;background:#fff7f3;color:#44251f;margin:0}
+    .wrap{max-width:980px;margin:auto;padding:16px}
+    .card{background:#fff;border:1px solid #ead6cf;border-radius:20px;padding:16px;margin:12px 0;box-shadow:0 6px 18px rgba(80,40,30,.06)}
+    .top{position:sticky;top:0;background:#a94a38;color:white;padding:12px 16px;z-index:9}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+    .metric{background:#fff4ef;border:1px solid #ecd1c8;border-radius:16px;padding:14px;text-align:center}
+    .metric b{font-size:28px;display:block;color:#a94a38}
+    input,button,select,textarea{font-size:16px;border-radius:14px;border:1px solid #d9bbb0;padding:12px;width:100%;box-sizing:border-box}
+    button{background:#a94a38;color:white;font-weight:700;border:0;margin-top:8px}
+    button.secondary{background:#f0dfd8;color:#5a2b22}
+    video{width:100%;border-radius:18px;background:#222}
+    .scan-ok{color:#1b7d3b}.scan-erro{color:#b33}.scan-warn{color:#b57600}
+    table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #eee;padding:8px;text-align:left}
+    .pill{display:inline-block;border-radius:999px;padding:4px 10px;background:#f3ded8;margin:2px}
+  </style>
+</head>
+<body>
+  <div class="top"><b>📷 Inventário profissional BRECHORISEE</b><br><small>câmera, QR/código, divergência e relatório</small></div>
+  <div class="wrap">
+    <div class="card">
+      <div class="grid" id="metrics">
+        <div class="metric"><b>0</b><span>Escaneadas</span></div>
+        <div class="metric"><b>0</b><span>OK</span></div>
+        <div class="metric"><b>0</b><span>Não achadas</span></div>
+        <div class="metric"><b>0</b><span>Duplicadas</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Nova sessão</h2>
+      <input id="sessionName" placeholder="Nome da sessão. Ex: Inventário Loja - hoje">
+      <input id="operatorName" placeholder="Operadora responsável">
+      <button onclick="newSession()">Iniciar nova sessão</button>
+    </div>
+
+    <div class="card">
+      <h2>Escanear peça</h2>
+      <video id="video" playsinline muted></video>
+      <button onclick="startCamera()">Abrir câmera</button>
+      <button class="secondary" onclick="stopCamera()">Parar câmera</button>
+      <p><small>Se o leitor automático não funcionar no aparelho, digite o código abaixo.</small></p>
+      <input id="code" placeholder="Código/QR da peça">
+      <button onclick="scanCode('manual')">Registrar código</button>
+      <div id="result"></div>
+    </div>
+
+    <div class="card">
+      <h2>Ajuste rápido de status</h2>
+      <input id="adjustCode" placeholder="Código da peça">
+      <select id="adjustStatus">
+        <option value="disponivel">Disponível</option>
+        <option value="reservado">Reservado</option>
+        <option value="vendido">Vendido</option>
+        <option value="perdido">Perdido/sumiu</option>
+        <option value="manutencao">Manutenção</option>
+      </select>
+      <input id="adjustReason" placeholder="Motivo do ajuste">
+      <button onclick="adjustStatus()">Aplicar ajuste</button>
+    </div>
+
+    <div class="card">
+      <h2>Últimas leituras</h2>
+      <div id="recent"></div>
+      <button onclick="finishSession()">Fechar sessão e gerar relatório</button>
+    </div>
+
+    <div class="card">
+      <h2>Telegram</h2>
+      <button onclick="telegramTest()">Enviar resumo para Telegram</button>
+      <button class="secondary" onclick="location.href='/telegram'">Abrir painel Telegram</button>
+    </div>
+  </div>
+
+<script>
+let currentSessionId=null, stream=null, detector=null, busy=false;
+
+async function api(url, data){
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data||{})});
+  const j=await r.json();
+  if(!r.ok || !j.ok) throw new Error(j.error||'Erro');
+  return j;
+}
+async function refresh(){
+  const r=await fetch('/api/inventario-profissional/resumo'+(currentSessionId?'?session_id='+currentSessionId:''));
+  const j=await r.json(); if(!j.ok) return;
+  const s=j.summary; currentSessionId=s.session.id;
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric"><b>${s.scanned_total}</b><span>Escaneadas</span></div>
+    <div class="metric"><b>${s.ok_total}</b><span>OK</span></div>
+    <div class="metric"><b>${s.not_found_total}</b><span>Não achadas</span></div>
+    <div class="metric"><b>${s.duplicate_total}</b><span>Duplicadas</span></div>`;
+  document.getElementById('recent').innerHTML = (s.recent_scans||[]).map(x=>`
+    <div class="pill">${x.code} • ${x.product_title||'não encontrada'} • ${x.scan_status}</div>`).join('') || 'Nenhuma leitura ainda.';
+}
+async function newSession(){
+  const j=await api('/api/inventario-profissional/sessao',{name:sessionName.value,operator_name:operatorName.value});
+  currentSessionId=j.summary.session.id; await refresh();
+}
+async function scanCode(source){
+  if(busy) return; busy=true;
+  try{
+    const code=(document.getElementById('code').value||'').trim();
+    const j=await api('/api/inventario-profissional/scan',{code,session_id:currentSessionId,source});
+    let cls=j.scan_status==='ok'?'scan-ok':(j.scan_status==='duplicada'?'scan-warn':'scan-erro');
+    result.innerHTML=`<p class="${cls}"><b>${j.scan_status}</b> — ${j.product?j.product.title:'peça não encontrada'}</p>`;
+    document.getElementById('code').value='';
+    await refresh();
+  }catch(e){ result.innerHTML=`<p class="scan-erro">${e.message}</p>`; }
+  busy=false;
+}
+async function startCamera(){
+  if(!('BarcodeDetector' in window)){ alert('Este navegador não tem leitor automático. Use o campo manual.'); return; }
+  detector=new BarcodeDetector({formats:['qr_code','code_128','ean_13','ean_8']});
+  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+  video.srcObject=stream; await video.play(); loopDetect();
+}
+function stopCamera(){ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } }
+async function loopDetect(){
+  if(!stream||!detector) return;
+  try{
+    const codes=await detector.detect(video);
+    if(codes.length && !busy){
+      document.getElementById('code').value=codes[0].rawValue;
+      await scanCode('camera');
+    }
+  }catch(e){}
+  setTimeout(loopDetect,900);
+}
+async function adjustStatus(){
+  const j=await api('/api/inventario-profissional/ajustar-status',{code:adjustCode.value,new_status:adjustStatus.value,reason:adjustReason.value,session_id:currentSessionId});
+  alert('Status ajustado: '+j.old_status+' → '+j.new_status);
+}
+async function finishSession(){
+  const j=await api('/api/inventario-profissional/fechar',{session_id:currentSessionId});
+  location.href=j.report_url;
+}
+async function telegramTest(){
+  const r=await fetch('/api/telegram/teste',{method:'POST'}); const j=await r.json();
+  alert(j.ok?'Resumo enviado/simulado no Telegram.':'Falha no Telegram');
+}
+refresh();
+</script>
+</body></html>

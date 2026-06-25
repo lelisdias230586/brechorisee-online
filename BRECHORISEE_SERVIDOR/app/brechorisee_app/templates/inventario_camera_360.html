@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block page_title %}Inventário por câmera{% endblock %}
+{% block content %}
+<section class="panel hero-panel">
+  <div>
+    <p class="eyebrow">Estoque ao vivo</p>
+    <h2>Leia etiquetas e confira o estoque peça por peça.</h2>
+    <p>Use com QR/código da etiqueta. Para peça sem etiqueta, use também o módulo “Reconhecer foto”.</p>
+  </div>
+  <div class="inline-actions">
+    <a class="btn" href="/recognize">Reconhecer foto</a>
+    <a class="btn" href="/products/new">Cadastrar peça</a>
+  </div>
+</section>
+
+<section class="grid two-columns">
+  <article class="panel">
+    <form id="sessionForm" class="stack-form">
+      <label>Nome da sessão<input name="title" placeholder="Inventário arara vestidos"></label>
+      <button class="btn primary" type="submit">Criar sessão</button>
+    </form>
+    <p id="sessionInfo" class="hint">Crie uma sessão ou escaneie para criar automaticamente.</p>
+
+    <form id="inventoryForm" class="stack-form">
+      <input type="hidden" name="session_id" id="sessionId">
+      <label>Código/QR<input name="code" id="inventoryCode" autocapitalize="characters" placeholder="Ex.: CALCA-001"></label>
+      <label>Ação
+        <select name="action">
+          <option value="conferido">Só conferir</option>
+          <option value="disponivel">Marcar disponível</option>
+          <option value="reservado">Marcar reservado</option>
+          <option value="vendido">Marcar vendido</option>
+          <option value="perdido">Marcar perdido</option>
+          <option value="manutencao">Marcar manutenção</option>
+        </select>
+      </label>
+      <button class="btn primary" type="submit">Registrar leitura</button>
+    </form>
+  </article>
+  <article class="panel" id="inventoryResult">
+    <p class="eyebrow">Resultado da leitura</p>
+    <p class="hint">A leitura aparecerá aqui.</p>
+  </article>
+</section>
+
+<section class="panel">
+  <p class="eyebrow">Sessões abertas</p>
+  {% if open_sessions %}
+    <div class="quick-grid">
+      {% for s in open_sessions %}
+        <button class="quick-card use-session" data-id="{{ s.id }}" type="button">
+          <strong>{{ s.title }}</strong><small>{{ s.scanned_count }} leitura(s) • {{ s.created_at }}</small>
+        </button>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty-state">Nenhuma sessão aberta.</p>
+  {% endif %}
+</section>
+
+<script>
+let currentSession = 0;
+document.querySelectorAll('.use-session').forEach(btn=>btn.addEventListener('click', ()=>{
+  currentSession = btn.dataset.id;
+  document.getElementById('sessionId').value = currentSession;
+  document.getElementById('sessionInfo').textContent = 'Sessão selecionada: #' + currentSession;
+}));
+document.getElementById('sessionForm').addEventListener('submit', async ev=>{
+  ev.preventDefault();
+  const data = Object.fromEntries(new FormData(ev.target).entries());
+  const res = await fetch('/api/inventario/sessao',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  const out = await res.json();
+  if(out.ok){ currentSession = out.session_id; document.getElementById('sessionId').value = currentSession; document.getElementById('sessionInfo').textContent = 'Sessão criada: #' + currentSession + ' — ' + out.title; }
+});
+document.getElementById('inventoryForm').addEventListener('submit', async ev=>{
+  ev.preventDefault();
+  const data = Object.fromEntries(new FormData(ev.target).entries());
+  const res = await fetch('/api/inventario/escanear',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  const out = await res.json();
+  const money = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  document.getElementById('inventoryResult').innerHTML = out.ok ? `
+    <p class="${out.found ? 'success' : 'alert error'}">${out.message}</p>
+    ${out.product ? `<h3>${out.product.code} — ${out.product.title}</h3><p>Status: ${out.previous_status} → ${out.new_status}</p><p>Preço: ${money(out.product.sale_price)}</p>` : ''}
+    <p class="hint">Sessão #${out.session_id}</p>
+  ` : `<p class="alert error">${out.message}</p>`;
+  if(out.session_id){ document.getElementById('sessionId').value = out.session_id; }
+  document.getElementById('inventoryCode').value = '';
+  document.getElementById('inventoryCode').focus();
+});
+</script>
+{% endblock %}

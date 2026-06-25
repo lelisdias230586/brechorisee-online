@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-br"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BRECHORISEE Telegram</title><link rel="stylesheet" href="/css/style.css">
+<style>
+body{font-family:Arial,sans-serif;background:#f9f1ed;margin:0;color:#41251f}.top{background:#a94a38;color:#fff;padding:14px 18px;position:sticky;top:0}.wrap{max-width:980px;margin:auto;padding:14px}.card{background:white;border-radius:20px;padding:16px;margin:12px 0;box-shadow:0 6px 18px #0001}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.metric{background:#fff4ef;border-radius:16px;padding:14px;text-align:center}.metric b{font-size:28px;color:#a94a38}button,input,textarea{width:100%;box-sizing:border-box;border-radius:14px;padding:12px;border:1px solid #d7b9ae;margin-top:8px;font-size:16px}button{background:#a94a38;color:white;border:0;font-weight:bold}button.secondary{background:#ead7cf;color:#56271f}canvas{max-width:100%}
+</style></head><body>
+<div class="top"><b>🤖 Controle Telegram BRECHORISEE</b><br><small>mensagens, botões, gráficos e avisos</small></div>
+<div class="wrap">
+<div class="card">
+  <h2>Status</h2>
+  <div class="grid" id="metrics"></div>
+  <canvas id="chart" height="130"></canvas>
+</div>
+<div class="card">
+  <h2>Enviar aviso agora</h2>
+  <textarea id="message" rows="5" placeholder="Digite o aviso para o Telegram"></textarea>
+  <button onclick="sendMsg()">Enviar com botões</button>
+  <button class="secondary" onclick="sendTest()">Enviar resumo automático</button>
+</div>
+<div class="card">
+  <h2>Webhook e comandos</h2>
+  <button onclick="setupWebhook()">Configurar webhook no Telegram</button>
+  <button class="secondary" onclick="loadCommands()">Ver comandos</button>
+  <pre id="commands"></pre>
+</div>
+<div class="card">
+  <h2>Eventos recentes</h2>
+  <div id="events"></div>
+</div>
+</div>
+<script>
+async function load(){
+ const r=await fetch('/api/telegram/status'); const j=await r.json(); const m=j.metrics;
+ metrics.innerHTML = `
+ <div class="metric"><b>${m.messages_pending}</b><span>Mensagens</span></div>
+ <div class="metric"><b>${m.reservations_open}</b><span>Reservas</span></div>
+ <div class="metric"><b>${m.products_available}</b><span>Disponíveis</span></div>
+ <div class="metric"><b>${m.products_new}</b><span>Peças novas</span></div>
+ <div class="metric"><b>${m.live_active}</b><span>Lives</span></div>
+ <div class="metric"><b>${m.inventory.scanned_total}</b><span>Inventário</span></div>`;
+ draw([m.messages_pending,m.reservations_open,m.products_new,m.live_active,m.inventory.scanned_total]);
+ const ev=await (await fetch('/api/telegram/eventos')).json();
+ events.innerHTML=(ev.events||[]).map(e=>`<p><b>${e.title}</b><br>${e.message||''}<br><small>${e.status} • ${e.created_at}</small></p>`).join('')||'Nenhum evento.';
+}
+function draw(values){
+ const c=document.getElementById('chart'),ctx=c.getContext('2d'),w=c.width=c.clientWidth,h=c.height;
+ ctx.clearRect(0,0,w,h); const max=Math.max(...values,1); const bw=w/(values.length*1.5);
+ values.forEach((v,i)=>{const bh=(h-20)*(v/max); ctx.fillStyle='#a94a38'; ctx.fillRect(20+i*bw*1.5,h-bh-10,bw,bh); ctx.fillStyle='#333'; ctx.fillText(v,25+i*bw*1.5,h-bh-14);});
+}
+async function sendMsg(){
+ const text=message.value.trim(); if(!text) return alert('Digite uma mensagem.');
+ const r=await fetch('/api/telegram/enviar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,buttons:true})});
+ const j=await r.json(); alert(j.ok?'Enviado/simulado.':'Falha: '+(j.error||'')); load();
+}
+async function sendTest(){ const j=await (await fetch('/api/telegram/teste',{method:'POST'})).json(); alert(j.ok?'Resumo enviado/simulado.':'Falha'); load(); }
+async function setupWebhook(){ const j=await (await fetch('/api/telegram/webhook/configurar',{method:'POST'})).json(); alert(j.ok?'Webhook pronto: '+j.webhook_url:'Falha: '+j.error); }
+async function loadCommands(){ const j=await (await fetch('/api/telegram/comandos')).json(); commands.textContent=JSON.stringify(j.commands,null,2); }
+load(); setInterval(load,15000);
+</script></body></html>

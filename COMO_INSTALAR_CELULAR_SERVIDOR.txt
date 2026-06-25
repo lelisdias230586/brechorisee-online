@@ -1,0 +1,20 @@
+Sistema BRECHORISEE v4.7.3 - celular servidor
+
+1. Copie para Downloads do celular:
+   - BRECHORISEE_SERVIDOR
+   - SISTEMA_BRECHORISEE_CELULAR.sh
+
+2. Abra o Termux.
+
+3. Rode:
+
+cd ~/storage/downloads
+bash SISTEMA_BRECHORISEE_CELULAR.sh
+
+4. Para iniciar depois:
+
+bash ~/INICIAR_SISTEMA_BRECHORISEE.sh
+
+5. Endereco oficial:
+
+http://192.168.1.18:8000

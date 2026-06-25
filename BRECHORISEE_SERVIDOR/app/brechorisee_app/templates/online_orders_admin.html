@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block page_title %}Vendas online{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Self-service</p>
+      <h2>Pedidos da vitrine online</h2>
+      <p class="hint">Acompanhe pedidos, pagamentos, reservas e conclusão das vendas online.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="btn primary" href="/loja" target="_blank">Abrir vitrine</a>
+      <a class="btn" href="/loja/carrinho" target="_blank">Carrinho público</a>
+    </div>
+  </div>
+  <form class="search-row" method="get" action="/loja-admin">
+    <select name="status">
+      {% for s,label in [('todos','Todos'),('aguardando_pagamento','Aguardando pagamento'),('pago','Pago'),('separado','Separado'),('em_entrega','Em entrega'),('cliente_ausente','Cliente ausente'),('entregue','Entregue'),('cancelado','Cancelado'),('conflito','Conflito')] %}
+      <option value="{{ s }}" {{ 'selected' if status == s else '' }}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn primary" type="submit">Filtrar</button>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Pedido</th><th>Cliente</th><th>Entrega</th><th>Itens</th><th>Total</th><th>Status</th><th>Criado</th><th>Ações</th></tr></thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td>{{ o.order_code }}</td>
+          <td>{{ o.customer_name }}<br><small>{{ o.customer_phone or '' }}</small></td>
+          <td>
+            {% if o.delivery_method == 'entrega' %}
+              <strong>Entrega</strong><br>
+              <small>{{ o.address or 'Sem endereço' }}</small><br>
+              {% if o.delivery_maps_url %}<a href="{{ o.delivery_maps_url }}" target="_blank">Mapa</a>{% endif %}
+            {% else %}
+              <span class="hint">Retirada</span>
+            {% endif %}
+          </td>
+          <td>{{ o.item_count }}</td>
+          <td>{{ o.total|money }}</td>
+          <td>{{ o.status }}</td>
+          <td>{{ o.created_at|date_br }}</td>
+          <td>
+            <div class="inline-actions">
+              <a class="btn ghost" href="/loja/pedido/{{ o.id }}" target="_blank">Ver</a>
+              {% if o.status == 'aguardando_pagamento' %}
+              <form method="post" action="/loja-admin/{{ o.id }}/confirmar"><button class="btn primary" type="submit">Confirmar pagamento</button></form>
+              {% endif %}
+              <form method="post" action="/loja-admin/{{ o.id }}/status">
+                <select name="status">
+                  {% for s in ['aguardando_pagamento','pago','separado','em_entrega','cliente_ausente','entregue','cancelado'] %}
+                  <option value="{{ s }}" {{ 'selected' if o.status == s else '' }}>{{ s }}</option>
+                  {% endfor %}
+                </select>
+                <button class="btn" type="submit">Salvar</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8">Nenhum pedido online.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

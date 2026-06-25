@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block page_title %}Gráficos completos{% endblock %}
+{% block content %}
+<section class="panel report-toolbar">
+  <div>
+    <p class="eyebrow">Relatórios completos</p>
+    <h2>Gráficos para tudo</h2>
+    <p class="hint">Vendas, compras, estoque, clientes, preferências, pagamentos, caixa e portfólio do BRECHORISEE.</p>
+  </div>
+  <label>
+    Período
+    <select id="reportDays">
+      <option value="7">7 dias</option>
+      <option value="30" selected>30 dias</option>
+      <option value="90">90 dias</option>
+      <option value="180">180 dias</option>
+      <option value="365">365 dias</option>
+      <option value="730">2 anos</option>
+    </select>
+  </label>
+</section>
+
+<section class="stats-grid report-kpis">
+  <article class="stat-card"><span>Faturamento</span><strong id="kpiSales">R$ 0,00</strong><small>No período</small></article>
+  <article class="stat-card"><span>Peças vendidas</span><strong id="kpiItems">0</strong><small>Itens baixados do estoque</small></article>
+  <article class="stat-card"><span>Ticket médio</span><strong id="kpiAvg">R$ 0,00</strong><small>Por venda</small></article>
+  <article class="stat-card glow"><span>Margem bruta</span><strong id="kpiMargin">R$ 0,00</strong><small id="kpiMarginPct">0%</small></article>
+</section>
+
+<section class="report-grid">
+  <article class="panel chart-card">
+    <div class="section-head no-margin"><div><p class="eyebrow">Faturamento</p><h2>Vendas por dia</h2></div><strong id="salesTotal">R$ 0,00</strong></div>
+    <canvas id="salesChart" height="220"></canvas>
+  </article>
+
+  <article class="panel chart-card">
+    <div class="section-head no-margin"><div><p class="eyebrow">Entradas</p><h2>Compras / custos por dia</h2></div><strong id="purchaseTotal">R$ 0,00</strong></div>
+    <canvas id="purchaseChart" height="220"></canvas>
+  </article>
+
+  <article class="panel chart-card">
+    <div class="section-head no-margin"><div><p class="eyebrow">Meses</p><h2>Qual mês mais vende</h2></div></div>
+    <canvas id="monthChart" height="220"></canvas>
+  </article>
+
+  <article class="panel chart-card">
+    <div class="section-head no-margin"><div><p class="eyebrow">Pagamentos</p><h2>Como elas pagam</h2></div></div>
+    <canvas id="paymentChart" height="220"></canvas>
+  </article>
+
+  <article class="panel chart-card">
+    <div class="section-head no-margin"><div><p class="eyebrow">Clientes</p><h2>Quem compra mais</h2></div></div>
+    <canvas id="customerChart" height="220"></canvas>
+  </article>
+
+  <article class="panel chart-card">
+    <div class="section-head no-margin"><div><p class="eyebrow">Mais vendidos</p><h2>Tipos / estilos</h2></div></div>
+    <canvas id="topChart" height="220"></canvas>
+  </article>
+
+  <article class="panel chart-card">
+    <div class="section-head no-margin"><div><p class="eyebrow">Estoque</p><h2>Tempo parado</h2></div><a href="/stock-history">Histórico</a></div>
+    <canvas id="ageChart" height="220"></canvas>
+  </article>
+
+  <article class="panel chart-card">
+    <div class="section-head no-margin"><div><p class="eyebrow">Caixa</p><h2>Dias da semana</h2></div></div>
+    <canvas id="weekChart" height="220"></canvas>
+  </article>
+
+  <article class="panel chart-card">
+    <div class="section-head no-margin"><div><p class="eyebrow">Horários</p><h2>Horários que mais vendem</h2></div></div>
+    <canvas id="hourChart" height="220"></canvas>
+  </article>
+</section>
+
+<section class="report-grid">
+  <article class="panel chart-card"><div class="section-head no-margin"><div><p class="eyebrow">Portfólio</p><h2>Estoque por categoria</h2></div></div><canvas id="portfolioCategoryChart" height="220"></canvas></article>
+  <article class="panel chart-card"><div class="section-head no-margin"><div><p class="eyebrow">Portfólio</p><h2>Estoque por marca</h2></div></div><canvas id="portfolioBrandChart" height="220"></canvas></article>
+  <article class="panel chart-card"><div class="section-head no-margin"><div><p class="eyebrow">Portfólio</p><h2>Estoque por cor</h2></div></div><canvas id="portfolioColorChart" height="220"></canvas></article>
+  <article class="panel chart-card"><div class="section-head no-margin"><div><p class="eyebrow">Portfólio</p><h2>Estoque por tamanho</h2></div></div><canvas id="portfolioSizeChart" height="220"></canvas></article>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin"><div><p class="eyebrow">Preferência por cliente</p><h2>Qual estilo cada cliente prefere</h2></div></div>
+  <div id="customerPreferences" class="report-table"></div>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin"><div><p class="eyebrow">Clientes VIP</p><h2>Ranking de clientes</h2></div></div>
+  <div id="topCustomersTable" class="report-table"></div>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin"><div><p class="eyebrow">Fornecedoras</p><h2>Compras e vendas por fornecedora</h2></div></div>
+  <div id="supplierBars" class="bar-list"></div>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin"><div><p class="eyebrow">Resumo do caixa</p><h2>Fechamento do período</h2></div></div>
+  <div id="cashierSummary" class="report-table"></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/reports.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block page_title %}Fornecedoras{% endblock %}
+{% block content %}
+<section class="split-layout">
+  <form class="panel form-card compact" method="post" action="/suppliers">
+    <p class="eyebrow">Nova fornecedora</p>
+    <label>Nome *<input name="name" required placeholder="Nome da fornecedora"></label>
+    <label>Telefone / WhatsApp<input name="phone" placeholder="(00) 00000-0000"></label>
+    <label>E-mail<input name="email" type="email"></label>
+    <label>Instagram<input name="instagram" placeholder="@usuario"></label>
+    <label>Observações<textarea name="notes" placeholder="Regras de consignação, comissão, preferências..."></textarea></label>
+    <button class="btn primary" type="submit">Salvar fornecedora</button>
+  </form>
+
+  <section class="panel">
+    <div class="section-head no-margin">
+      <div>
+        <p class="eyebrow">Cadastro</p>
+        <h2>Lista de fornecedoras</h2>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th><th>Contato</th><th>Instagram</th><th>Peças</th><th>Observações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in suppliers %}
+          <tr>
+            <td><strong>{{ s.name }}</strong></td>
+            <td>{{ s.phone or s.email or '-' }}</td>
+            <td>{{ s.instagram or '-' }}</td>
+            <td>{{ s.items_count }}</td>
+            <td>{{ s.notes or '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+{% endblock %}

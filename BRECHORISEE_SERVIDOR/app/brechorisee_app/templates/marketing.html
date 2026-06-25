@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+{% block page_title %}Marketing Instagram{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Marketing</p>
+      <h2>Criar post, carrossel, story ou reel</h2>
+      <p class="hint">Selecione a peça e o sistema já abre automaticamente as fotos e vídeos correspondentes.</p>
+    </div>
+  </div>
+  <form class="search-row marketing-search" method="get" action="/marketing">
+    <input name="q" value="{{ q }}" autocomplete="off" inputmode="search" placeholder="Procure a peça para criar conteúdo...">
+    <button class="btn primary" type="submit">Buscar peça</button>
+    {% if selected_product %}<a class="btn" href="/marketing?product_id={{ selected_product.id }}">Atualizar galeria</a>{% endif %}
+    <a class="btn ghost" href="/marketing">Limpar</a>
+  </form>
+</section>
+
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Escolha uma peça</p>
+    <h2>Peças para conteúdo</h2>
+  </div>
+</section>
+
+<div class="product-grid">
+  {% for p in products %}
+    <article class="product-card">
+      <a href="/marketing?product_id={{ p.id }}" class="product-photo">
+        {% if p.image_filename %}
+          <img src="{{ url_for('static', path='/uploads/' ~ p.image_filename) }}" alt="{{ p.title }}">
+        {% else %}
+          <span>sem foto</span>
+        {% endif %}
+      </a>
+      <div class="product-body">
+        <div>
+          <strong>{{ p.title }}</strong>
+          <small>{{ p.code }} • {{ p.garment_type or p.category or 'Peça' }}</small>
+        </div>
+        <div class="inline-actions">
+          <a class="btn primary" href="/marketing?product_id={{ p.id }}">Selecionar</a>
+          <a class="btn ghost" href="/products/{{ p.id }}">Ver peça</a>
+        </div>
+      </div>
+    </article>
+  {% else %}
+    <div class="empty-state">
+      <h3>Nenhuma peça encontrada.</h3>
+      <p>Procure digitando o nome, código, marca, cor ou característica.</p>
+    </div>
+  {% endfor %}
+</div>
+
+{% if selected_product %}
+<section class="panel marketing-panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Peça selecionada</p>
+      <h2>{{ selected_product.title }}</h2>
+      <p class="hint">Ao selecionar a peça, os arquivos correspondentes já são abertos abaixo.</p>
+    </div>
+    <div class="inline-actions">
+      <span class="pill disponivel">{{ selected_product.code }}</span>
+      <span class="pill disponivel">{{ selected_product.sale_price|money }}</span>
+    </div>
+  </div>
+
+  <form method="post" action="/marketing/generate" class="marketing-layout">
+    <input type="hidden" name="product_id" value="{{ selected_product.id }}">
+
+    <article>
+      <h3>Arquivos da peça</h3>
+      <p class="hint">Fotos e vídeos já vinculados ao cadastro. Desmarque o que não quiser usar.</p>
+      <div class="media-gallery selectable-gallery">
+        {% for item in selected_media %}
+          <label class="media-tile selectable">
+            <input type="checkbox" name="selected_media_ids" value="{{ item.id }}" checked>
+            {% if item.media_type == 'video' %}
+              <video src="{{ url_for('static', path='/uploads/' ~ item.filename) }}" controls preload="metadata"></video>
+            {% else %}
+              <img src="{{ url_for('static', path='/uploads/' ~ item.filename) }}" alt="{{ item.original_filename or selected_product.title }}">
+            {% endif %}
+            <div>
+              <strong>{{ 'Vídeo' if item.media_type == 'video' else 'Foto' }}</strong>
+              <small>{{ item.notes or item.original_filename or item.filename }}</small>
+            </div>
+          </label>
+        {% else %}
+          <div class="empty-state compact">
+            <h3>Nenhuma mídia cadastrada.</h3>
+            <p>Adicione fotos e vídeos na ficha da peça para usar no Instagram.</p>
+          </div>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="panel inner-panel marketing-form-panel">
+      <h3>Configurar conteúdo</h3>
+      <label>
+        Formato
+        <select name="content_type">
+          <option value="post">Post</option>
+          <option value="carrossel">Carrossel</option>
+          <option value="reel">Reel</option>
+          <option value="story">Story</option>
+        </select>
+      </label>
+      <label>
+        Modelo visual
+        <select name="template_style">
+          <option value="minimalista">Minimalista claro</option>
+          <option value="chic">Chic clean</option>
+          <option value="promocao">Promoção / achadinho</option>
+          <option value="luxo">Luxo escuro</option>
+        </select>
+      </label>
+      <label>
+        Selo
+        <select name="seal">
+          <option value="auto">Automático</option>
+          <option value="Novo">Novo</option>
+          <option value="Tendência">Tendência</option>
+          <option value="Peça única">Peça única</option>
+          <option value="Achadinho">Achadinho</option>
+          <option value="Promoção">Promoção</option>
+          <option value="Reservado">Reservado</option>
+          <option value="Vendido">Vendido</option>
+        </select>
+      </label>
+      <label>
+        Tempo do vídeo
+        <select name="duration_mode">
+          <option value="curto">Curto</option>
+          <option value="medio" selected>Médio</option>
+          <option value="longo">Longo</option>
+        </select>
+      </label>
+      <label>
+        Qualidade
+        <select name="quality_mode">
+          <option value="alta" selected>Alta</option>
+          <option value="maxima">Máxima</option>
+        </select>
+      </label>
+      <label>
+        Áudio / narração
+        <select name="audio_mode">
+          <option value="narracao" selected>Narração</option>
+          <option value="narracao_musica">Narração + música no Instagram</option>
+          <option value="sem_audio">Sem áudio</option>
+        </select>
+      </label>
+      <label>
+        Estilo de música sugerida
+        <select name="music_mode">
+          <option value="viral" selected>Viral / tendência</option>
+          <option value="animada">Animada</option>
+          <option value="elegante">Elegante</option>
+          <option value="romantica">Romântica</option>
+        </select>
+      </label>
+      <label>
+        Texto base
+        <textarea name="custom_text" rows="7" placeholder="Escreva ou dite um texto. Ex.: Bolsa linda, prática e moderna para o dia a dia."></textarea>
+      </label>
+      <div class="inline-actions wrap-between">
+        <button class="btn" type="button" id="voiceMarketingBtn">🎙️ Ditar texto</button>
+        <button class="btn primary" type="submit">Gerar conteúdo</button>
+      </div>
+      <p class="hint">O sistema cria legenda, hashtags, texto de capa e roteiro para reel.</p>
+    </article>
+  </form>
+</section>
+{% endif %}
+
+{% if generated %}
+<section class="panel marketing-result">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Conteúdo gerado</p>
+      <h2>{{ generated.format_label }} pronto para usar</h2>
+      <p class="hint">Modelo: {{ generated.template_style }} • Selo: {{ generated.seal }} • Tempo: {{ generated.duration_label }} • Qualidade: {{ generated.quality_label }}</p>
+    </div>
+  </div>
+  <div class="marketing-result-grid">
+    <article class="social-preview">
+      {% if generated.rendered_post_url %}
+      <div class="social-frame {{ generated.content_type }}">
+        <img src="{{ generated.rendered_post_url }}" alt="{{ generated.title }}">
+      </div>
+      {% endif %}
+      <div class="inline-actions" style="margin-top:12px;">
+        {% if generated.rendered_post_url %}
+          <a class="btn primary" href="{{ generated.rendered_post_url }}" target="_blank">Abrir arte final</a>
+          <a class="btn" href="{{ generated.rendered_post_url }}" download>Baixar arte</a>
+          <button class="btn ghost share-btn" type="button" data-share-url="{{ generated.rendered_post_url }}" data-share-title="Arte BRECHORISEE">Compartilhar</button>
+        {% endif %}
+        {% if generated.rendered_reel_url %}
+          <a class="btn" href="{{ generated.rendered_reel_url }}" target="_blank">Abrir reel</a>
+          <a class="btn" href="{{ generated.rendered_reel_url }}" download>Baixar reel</a>
+          <button class="btn ghost share-btn" type="button" data-share-url="{{ generated.rendered_reel_url }}" data-share-title="Reel BRECHORISEE">Compartilhar reel</button>
+        {% endif %}
+      </div>
+      {% if generated.carousel_slide_urls %}
+      <div class="carousel-slides">
+        <h3>Slides do carrossel</h3>
+        <div class="media-gallery">
+          {% for slide in generated.carousel_slide_urls %}
+            <article class="media-tile">
+              <img src="{{ slide }}" alt="Slide {{ loop.index }}">
+              <div><small>Slide {{ loop.index }}</small><a class="btn ghost" href="{{ slide }}" target="_blank">Abrir</a><a class="btn ghost" href="{{ slide }}" download>Baixar</a></div>
+            </article>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      {% if generated.rendered_reel_url %}
+      <div class="text-block">
+        <h3>Prévia do reel</h3>
+        <video src="{{ generated.rendered_reel_url }}" controls preload="metadata" style="width:100%; border-radius:20px;"></video>
+      </div>
+      {% endif %}
+    </article>
+    <article>
+      <div class="text-block">
+        <h3>Legenda</h3>
+        <textarea class="copy-box" id="captionBox" rows="10">{{ generated.full_caption }}</textarea>
+        <button class="btn" type="button" data-copy-target="captionBox">Copiar legenda</button>
+      </div>
+      <div class="text-block">
+        <h3>Hashtags</h3>
+        <textarea class="copy-box" id="hashtagsBox" rows="3">{{ generated.hashtags }}</textarea>
+        <button class="btn" type="button" data-copy-target="hashtagsBox">Copiar hashtags</button>
+      </div>
+      <div class="text-block">
+        <h3>Narração pronta</h3>
+        <textarea class="copy-box" id="narrationBox" rows="6">{{ generated.narration_text }}</textarea>
+        <div class="inline-actions">
+          <button class="btn" type="button" data-copy-target="narrationBox">Copiar narração</button>
+          <button class="btn" type="button" id="previewNarrationBtn">Ouvir narração</button>
+          <button class="btn ghost" type="button" id="stopNarrationBtn">Parar voz</button>
+        </div>
+      </div>
+      <div class="text-block">
+        <h3>Sugestões de música / áudio viral</h3>
+        <ul>
+          {% for item in generated.music_suggestions %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+        <p class="hint">Essas sugestões servem para você pesquisar na biblioteca do Instagram na hora de postar. Assim você pode usar o áudio viral mais atual sem depender de arquivo fixo no sistema.</p>
+      </div>
+      {% if generated.content_type == 'reel' %}
+      <div class="text-block">
+        <h3>Roteiro do reel</h3>
+        <ul>
+          {% for step in generated.reel_script %}
+            <li>{{ step }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </article>
+  </div>
+</section>
+{% endif %}
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Histórico</p>
+      <h2>Rascunhos gerados</h2>
+    </div>
+  </div>
+  <div class="draft-grid">
+    {% for d in drafts %}
+      <article class="draft-card">
+        <strong>{{ d.content_type|title }}</strong>
+        <small>{{ d.product_title }} • {{ d.product_code }}</small>
+        <p>{{ d.caption[:120] }}{% if d.caption and d.caption|length > 120 %}...{% endif %}</p>
+        <span class="hint">{{ d.created_at|date_br }}</span>
+      </article>
+    {% else %}
+      <div class="empty-state compact">
+        <h3>Nenhum rascunho ainda.</h3>
+        <p>Gere seu primeiro post ou reel.</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-copy-target]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const target = document.getElementById(btn.dataset.copyTarget);
+      if (!target) return;
+      target.select();
+      target.setSelectionRange(0, target.value.length);
+      try {
+        await navigator.clipboard.writeText(target.value);
+        btn.textContent = 'Copiado!';
+        setTimeout(() => btn.textContent = btn.dataset.copyTarget === 'captionBox' ? 'Copiar legenda' : 'Copiar hashtags', 1400);
+      } catch (e) {
+        document.execCommand('copy');
+      }
+    });
+  });
+
+
+  document.querySelectorAll('.share-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const url = new URL(btn.dataset.shareUrl, window.location.href).href;
+      const title = btn.dataset.shareTitle || 'BRECHORISEE';
+      if (navigator.share) {
+        try {
+          await navigator.share({ title, text: 'Conteúdo criado no BRECHORISEE', url });
+          return;
+        } catch (e) {}
+      }
+      try {
+        await navigator.clipboard.writeText(url);
+        btn.textContent = 'Link copiado!';
+        setTimeout(() => btn.textContent = title.includes('Reel') ? 'Compartilhar reel' : 'Compartilhar', 1400);
+      } catch (e) {
+        window.open(url, '_blank');
+      }
+    });
+  });
+
+  const previewNarrationBtn = document.getElementById('previewNarrationBtn');
+  const stopNarrationBtn = document.getElementById('stopNarrationBtn');
+  const narrationBox = document.getElementById('narrationBox');
+  if (previewNarrationBtn && narrationBox && 'speechSynthesis' in window) {
+    previewNarrationBtn.addEventListener('click', () => {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(narrationBox.value);
+      utter.lang = 'pt-BR';
+      utter.rate = 1;
+      utter.pitch = 1;
+      window.speechSynthesis.speak(utter);
+    });
+  }
+  stopNarrationBtn?.addEventListener('click', () => {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  });
+
+  const voiceBtn = document.getElementById('voiceMarketingBtn');
+  if (voiceBtn && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new Recognition();
+    recognition.lang = 'pt-BR';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    const textarea = document.querySelector('textarea[name="custom_text"]');
+    voiceBtn.addEventListener('click', () => recognition.start());
+    recognition.onresult = (event) => {
+      if (textarea) textarea.value = (textarea.value ? textarea.value + ' ' : '') + event.results[0][0].transcript;
+    };
+  } else if (voiceBtn) {
+    voiceBtn.disabled = true;
+    voiceBtn.title = 'Voz não suportada neste navegador';
+  }
+});
+</script>
+{% endblock %}

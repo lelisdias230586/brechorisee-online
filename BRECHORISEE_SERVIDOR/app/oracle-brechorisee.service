@@ -1,0 +1,18 @@
+# /etc/systemd/system/brechorisee.service
+[Unit]
+Description=BRECHORISEE FastAPI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=brechorisee
+Group=brechorisee
+WorkingDirectory=/opt/brechorisee
+EnvironmentFile=/opt/brechorisee/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/brechorisee/.venv/bin/uvicorn brechorisee_app.app:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips="*"
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

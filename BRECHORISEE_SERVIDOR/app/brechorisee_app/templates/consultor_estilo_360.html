@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block page_title %}Consultor de estilo{% endblock %}
+{% block content %}
+<section class="panel hero-panel">
+  <div>
+    <p class="eyebrow">Instagram • família • sugestão de peças</p>
+    <h2>Identifique a cliente pelo @ e sugira peças no estilo dela.</h2>
+    <p>O sistema usa histórico de compras, preferências cadastradas e termos informados. Ele não acessa Instagram privado nem faz scraping.</p>
+  </div>
+</section>
+
+<section class="panel">
+  <form id="styleForm" class="search-grid">
+    <input name="q" placeholder="@instagram, nome ou telefone da cliente">
+    <input name="membro" placeholder="Para quem? Ex.: filha, mãe, marido">
+    <input name="tamanho" placeholder="Tamanho(s). Ex.: P, 38, infantil 8">
+    <input name="estilo" placeholder="Estilo. Ex.: romântico, básico, festa">
+    <input name="cor" placeholder="Cores desejadas">
+    <button class="btn primary" type="submit">Sugerir peças</button>
+  </form>
+</section>
+
+<section class="grid two-columns">
+  <article class="panel" id="styleProfile">
+    <p class="eyebrow">Perfil</p>
+    <p class="hint">Pesquise uma cliente para montar o perfil.</p>
+  </article>
+  <article class="panel" id="styleTerms">
+    <p class="eyebrow">Termos usados</p>
+    <p class="hint">Os termos aparecem após a busca.</p>
+  </article>
+</section>
+
+<section class="panel">
+  <p class="eyebrow">Peças sugeridas</p>
+  <div id="styleSuggestions" class="product-grid"></div>
+</section>
+
+<script>
+document.getElementById('styleForm').addEventListener('submit', async ev=>{
+  ev.preventDefault();
+  const params = new URLSearchParams(new FormData(ev.target));
+  const res = await fetch('/api/consultor-estilo/sugerir?' + params.toString());
+  const out = await res.json();
+  document.getElementById('styleProfile').innerHTML = out.customer ? `
+    <p class="eyebrow">Perfil encontrado</p>
+    <h3>${out.customer.name}</h3>
+    <p>Instagram: ${out.customer.instagram || '-'}</p>
+    <p>Preferências: ${out.customer.preferences || '-'}</p>
+  ` : `<p class="alert">Cliente não encontrada. Sugestões feitas pelos termos digitados.</p>`;
+  document.getElementById('styleTerms').innerHTML = `<p class="eyebrow">Termos usados</p><p>${(out.terms||[]).join(', ') || '-'}</p><p class="hint">${out.message||''}</p>`;
+  const money = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  document.getElementById('styleSuggestions').innerHTML = (out.suggestions||[]).map(p=>`
+    <article class="product-card">
+      ${p.image_url ? `<img src="${p.image_url}" alt="">` : ''}
+      <h3>${p.code} — ${p.title}</h3>
+      <p>${p.garment_type || p.category || ''} ${p.size ? '• ' + p.size : ''} ${p.color ? '• ' + p.color : ''}</p>
+      <strong>${money(p.sale_price)}</strong>
+      <div class="inline-actions"><a class="btn small" href="/products/${p.id}">Ver peça</a></div>
+    </article>
+  `).join('') || '<p class="empty-state">Nenhuma peça sugerida ainda.</p>';
+});
+</script>
+{% endblock %}

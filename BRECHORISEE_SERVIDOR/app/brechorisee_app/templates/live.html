@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block page_title %}Live / reconhecimento{% endblock %}
+{% block content %}
+<style>
+.live-top-grid{display:grid;grid-template-columns:1.12fr .88fr;gap:16px}.live-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:#f4ebe6;color:#7b3f2f;font-weight:700}.live-pill .dot{width:10px;height:10px;border-radius:50%;background:#d5533c;display:inline-block}.studio-preview{position:relative;min-height:260px;border-radius:24px;overflow:hidden;background:linear-gradient(135deg,#3b221e,#6d3c31);color:#fff;padding:18px;display:flex;flex-direction:column;justify-content:space-between}.studio-preview .mock-frame{min-height:180px;border-radius:18px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:1.05rem;text-align:center;padding:12px}.studio-preview .floating-chat{position:absolute;right:12px;bottom:12px;width:min(280px,42%);background:rgba(255,255,255,.12);backdrop-filter:blur(10px);padding:12px;border-radius:18px}.floating-chat .mini{font-size:.86rem;opacity:.95}.sticky-live-card{position:sticky;top:12px}.status-ao_vivo,.status-ao-vivo{background:#fce0db;color:#c84a35}.status-aberta{background:#efe7ff;color:#55319b}.status-encerrada,.status-arquivada,.status-otimizada{background:#e9f2ec;color:#275b34}
+.live-control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}.live-control-grid form,.live-control-grid a{margin:0}.live-control-grid .btn{width:100%;justify-content:center}.live-search-grid{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin-top:14px}.live-search-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.live-note{margin-top:14px;padding:12px 14px;border-radius:18px;background:#fbf3ef;color:#7a4637}.live-quick-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}.live-quick-summary .summary-card{background:#fff7f2;border:1px solid #f0dfd6;border-radius:18px;padding:12px}.live-mobile-divider{height:1px;background:#eee2dc;margin:18px 0}.draft-grid .draft-card .inline-actions{flex-wrap:wrap}
+@media(max-width:980px){.live-top-grid{grid-template-columns:1fr}.live-control-grid,.live-search-actions,.live-quick-summary{grid-template-columns:1fr}.live-search-grid{grid-template-columns:1fr}.studio-preview .floating-chat{position:static;width:auto;margin-top:16px}}
+</style>
+<section class="live-top-grid">
+  <section class="panel live-panel">
+    <div class="section-head no-margin">
+      <div>
+        <p class="eyebrow">Sistema de brechó</p>
+        <h2>{{ session.title }}</h2>
+        <p class="hint">Área principal da live. Use os <strong>botões da live</strong> abaixo para iniciar, abrir o studio, controlar a transmissão, encerrar e ir para o pós-live.</p>
+        <p><span class="live-pill"><span class="dot"></span>{{ session.status|replace('_',' ')|title }}</span></p>
+      </div>
+    </div>
+
+    <div class="live-control-grid">
+      {% if session.status != 'ao_vivo' %}
+      <form method="post" action="/live/start">
+        <input type="hidden" name="session_id" value="{{ session.id }}">
+        <button class="btn primary" type="submit">▶ Iniciar live</button>
+      </form>
+      {% else %}
+      <a class="btn primary" href="/live/studio/{{ session.id }}">🎥 Abrir studio ao vivo</a>
+      {% endif %}
+
+
+      <a class="btn ghost" href="/live/instagram">📸 Live no Instagram</a>
+
+      <a class="btn ghost" href="/recognize">🧠 Reconhecer por foto</a>
+
+      {% if session.status == 'ao_vivo' %}
+      <form method="post" action="/live/end">
+        <input type="hidden" name="session_id" value="{{ session.id }}">
+        <button class="btn" type="submit">⏹ Encerrar live</button>
+      </form>
+      {% else %}
+      <a class="btn" href="/live/studio/{{ session.id }}">⚙️ Preparar studio</a>
+      {% endif %}
+
+      <a class="btn primary" href="/live/central/{{ session.id }}">🎛 Central da Live</a>
+      <a class="btn ghost" href="/live/finalizar/{{ session.id }}">🗂 Pós-live</a>
+      <a class="btn ghost" href="/live/repescagem/{{ session.id }}">🔁 Repescagem</a>
+    </div>
+
+    <div class="live-quick-summary">
+      <div class="summary-card">
+        <strong>{{ products|length }}</strong><br>
+        <small>peças disponíveis para fixar</small>
+      </div>
+      <div class="summary-card">
+        <strong>{{ items|length }}</strong><br>
+        <small>itens registrados na live</small>
+      </div>
+      <div class="summary-card">
+        <strong>{{ sessions|length }}</strong><br>
+        <small>lives no histórico</small>
+      </div>
+    </div>
+
+    <div class="live-mobile-divider"></div>
+
+    <form class="live-search-grid" method="get" action="/live">
+      <input name="q" value="{{ q }}" placeholder="Buscar peça para fixar na live: código, nome, cor, tamanho...">
+      <button class="btn primary" type="submit">Buscar</button>
+    </form>
+    <div class="live-search-actions">
+      <a class="btn" href="/recognize">Reconhecer por foto</a>
+      <a class="btn primary" href="/live/central/{{ session.id }}">Central da Live</a>
+      <a class="btn ghost" href="/live">Limpar busca</a>
+      {% if session.status == 'ao_vivo' %}
+        <a class="btn primary" href="/live/studio/{{ session.id }}">Gerenciar ao vivo</a>
+      {% else %}
+        <form method="post" action="/live/start">
+          <input type="hidden" name="session_id" value="{{ session.id }}">
+          <button class="btn primary" type="submit">Iniciar agora</button>
+        </form>
+      {% endif %}
+    </div>
+
+    <div class="live-note">
+      <strong>Fluxo sugerido:</strong> iniciar live → abrir studio → mostrar peças → reconhecimento identifica a peça → cliente vê a peça pequena na live → encerrar → escolher arquivar, excluir ou otimizar.
+    </div>
+  </section>
+
+  <aside class="panel sticky-live-card">
+    <div class="studio-preview">
+      <div>
+        <div class="inline-actions" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <strong>Preview da live</strong>
+          <span class="live-pill"><span class="dot"></span>{% if session.status == 'ao_vivo' %}AO VIVO{% else %}PRONTA{% endif %}</span>
+        </div>
+        <div class="mock-frame">A transmissão abre no Studio da Live com câmera, comentários, reação por emoji e reconhecimento automático funcionando enquanto a live estiver no ar.</div>
+      </div>
+      <div class="floating-chat">
+        <strong>Interação tipo live</strong>
+        <div class="mini">💬 comentários das clientes<br>❤️ reações instantâneas<br>🏷️ peça reconhecida exibida em destaque</div>
+      </div>
+    </div>
+  </aside>
+</section>
+
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Peças disponíveis</p>
+    <h2>Fixar na live</h2>
+  </div>
+  {% if session.status == 'ao_vivo' %}
+    <a class="btn primary" href="/live/studio/{{ session.id }}">Gerenciar ao vivo</a>
+  {% endif %}
+</section>
+
+<div class="product-grid live-product-grid">
+  {% for p in products %}
+    <article class="product-card">
+      <a href="/products/{{ p.id }}" class="product-photo">
+        {% if p.image_filename %}
+          <img src="{{ url_for('static', path='/uploads/' ~ p.image_filename) }}" alt="{{ p.title }}">
+        {% else %}
+          <span>sem foto</span>
+        {% endif %}
+        <em class="status {{ p.status }}">{{ p.status }}</em>
+      </a>
+      <div class="product-body">
+        <strong>{{ p.title }}</strong>
+        <small>{{ p.code }} • {{ p.sale_price|money }}</small>
+        <div class="inline-actions">
+          <form method="post" action="/live/items">
+            <input type="hidden" name="product_id" value="{{ p.id }}">
+            <input type="hidden" name="action" value="fixada">
+            <button class="btn primary" type="submit">Fixar peça</button>
+          </form>
+          <form method="post" action="/live/items">
+            <input type="hidden" name="product_id" value="{{ p.id }}">
+            <input type="hidden" name="action" value="ignorada">
+            <button class="btn ghost" type="submit">Ignorar sessão</button>
+          </form>
+        </div>
+      </div>
+    </article>
+  {% else %}
+    <div class="empty-state">
+      <h3>Nenhuma peça disponível encontrada.</h3>
+      <p>Peças vendidas, arquivadas ou ignoradas nesta live não entram aqui.</p>
+    </div>
+  {% endfor %}
+</div>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Durante a live</p>
+      <h2>Peças fixadas/reconhecidas</h2>
+      <p class="hint">A peça atual fica pequena na tela da cliente e troca automaticamente quando a câmera detecta outra.</p>
+    </div>
+  </div>
+
+  <div class="live-items-list">
+    {% for item in items %}
+      <article class="live-item-card">
+        {% if item.image_filename %}
+          <img src="{{ url_for('static', path='/uploads/' ~ item.image_filename) }}" alt="{{ item.product_title }}">
+        {% endif %}
+        <div>
+          <strong>{{ item.product_title }}</strong>
+          <small>{{ item.product_code }} • {{ item.product_price|money }}</small>
+          <p>
+            <span class="pill {{ item.current_status or item.status_snapshot }}">{{ item.current_status or item.status_snapshot }}</span>
+            <span class="pill">{{ item.action }}</span>
+            {% if item.current_status == 'vendido' or item.status_snapshot == 'vendido' %}
+              <strong>Já vendido</strong>
+            {% endif %}
+          </p>
+        </div>
+        <div class="inline-actions">
+          <a class="btn" href="/products/{{ item.product_id }}">Abrir</a>
+          {% if item.current_status != 'vendido' and item.status_snapshot != 'vendido' %}
+          <form method="post" action="/live/items/{{ item.id }}/sold">
+            <button class="btn primary" type="submit">Marcar vendida</button>
+          </form>
+          {% endif %}
+          <form method="post" action="/live/items/{{ item.id }}/ignore">
+            <button class="btn ghost" type="submit">Reconhecer próxima</button>
+          </form>
+        </div>
+      </article>
+    {% else %}
+      <div class="empty-state compact">
+        <h3>Nenhuma peça fixada ainda.</h3>
+        <p>Busque ou reconheça uma peça e fixe durante a live.</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Lives salvas</p>
+      <h2>Repescagem e pós-live</h2>
+    </div>
+  </div>
+  <div class="draft-grid">
+    {% for s in sessions %}
+      <article class="draft-card">
+        <strong>{{ s.title }}</strong>
+        <small><span class="pill status-{{ s.status|replace(' ','-') }}">{{ s.status }}</span> • {{ s.created_at|date_br }}</small>
+        <div class="inline-actions">
+          <a class="btn" href="/live/repescagem/{{ s.id }}">Repescagem</a>
+          <a class="btn ghost" href="/live/finalizar/{{ s.id }}">Arquivar / excluir / otimizar</a>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

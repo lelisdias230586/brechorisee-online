@@ -1,0 +1,86 @@
+{% extends "public_store_base.html" %}
+{% block store_content %}
+<section class="store-hero-modern">
+  <div class="hero-copy">
+    <p class="eyebrow">Compra self-service</p>
+    <h1>Escolha suas peças sem se perder.</h1>
+    <p>Veja fotos, adicione à sacola, finalize o pedido e receba as instruções de pagamento por Pix ou cartão/InfinitePay.</p>
+    <div class="hero-steps">
+      <span>1. Escolha</span>
+      <span>2. Reserve</span>
+      <span>3. Pague</span>
+      <span>4. Retire ou receba</span>
+    </div>
+    <div class="inline-actions">
+      <a class="btn primary" href="#pecas">Ver peças disponíveis</a>
+      <a class="btn ghost" href="/loja/carrinho">Abrir sacola</a>
+    </div>
+  </div>
+  <div class="hero-card">
+    <strong>Peças únicas</strong>
+    <span>O pedido reserva as peças enquanto o pagamento é confirmado.</span>
+    <small>Estoque integrado ao sistema BRECHORISEE.</small>
+  </div>
+</section>
+
+<section class="store-filter-modern" id="pecas">
+  <form method="get" action="/loja">
+    <div class="search-field">
+      <span>🔎</span>
+      <input name="q" value="{{ q }}" placeholder="Buscar: vestido preto M, Farm, bolsa, jeans...">
+    </div>
+    <select name="categoria">
+      <option value="">Todas as categorias</option>
+      {% for c in categories %}
+        <option value="{{ c.name }}" {{ 'selected' if categoria == c.name else '' }}>{{ c.name }} ({{ c.total }})</option>
+      {% endfor %}
+    </select>
+    <button class="btn primary" type="submit">Buscar</button>
+  </form>
+  <div class="quick-chips">
+    <a href="/loja">Tudo</a>
+    <a href="/loja?q=novidade">Novidades</a>
+    <a href="/loja?q=bolsa">Bolsas</a>
+    <a href="/loja?q=vestido">Vestidos</a>
+    <a href="/loja?q=jeans">Jeans</a>
+    <a href="/loja?q=promoção">Promoções</a>
+  </div>
+</section>
+
+<section class="store-count-row">
+  <span>{{ products|length }} peça(s) encontrada(s)</span>
+  <a href="/loja/carrinho">Finalizar pedido →</a>
+</section>
+
+<section class="store-grid modern-grid">
+  {% for p in products %}
+    <article class="store-product-card modern-card">
+      <a href="/loja/produto/{{ p.code }}" class="store-product-photo modern-photo">
+        {% if p.image_filename %}
+          <img src="{{ url_for('static', path='/uploads/' ~ p.image_filename) }}" alt="{{ p.title }}">
+        {% else %}
+          <span>sem foto</span>
+        {% endif %}
+        <em>Peça única</em>
+      </a>
+      <div class="store-product-info">
+        <strong>{{ p.title }}</strong>
+        <small>{{ p.size or 'tam. único' }} • {{ p.brand or 'sem marca' }}{% if p.color %} • {{ p.color }}{% endif %}</small>
+        <b>{{ p.sale_price|money }}</b>
+        <div class="inline-actions compact-actions">
+          <button class="btn primary add-to-cart-btn" type="button"
+            data-code="{{ p.code }}" data-title="{{ p.title }}" data-price="{{ p.sale_price }}"
+            data-photo="{{ url_for('static', path='/uploads/' ~ p.image_filename) if p.image_filename else '' }}">Adicionar</button>
+          <a class="btn ghost" href="/loja/produto/{{ p.code }}">Detalhes</a>
+        </div>
+      </div>
+    </article>
+  {% else %}
+    <div class="empty-state store-empty">
+      <h3>Nenhuma peça encontrada.</h3>
+      <p>Tente buscar por outro termo ou volte para a vitrine completa.</p>
+      <a class="btn primary" href="/loja">Ver tudo</a>
+    </div>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block page_title %}Telegram interno{% endblock %}
+{% block content %}
+<section class="grid two">
+  <article class="card">
+    <p class="eyebrow">Central interna</p>
+    <h2>Bot Telegram BRECHORISEE</h2>
+    <p class="muted">Use o Telegram como painel de alertas e comandos da equipe durante a live, pedidos e Pix.</p>
+    <div class="summary-grid">
+      <div><strong>{{ 'Ativo' if configured else 'Não configurado' }}</strong><span>Token + chat</span></div>
+      <div><strong>{{ 'Real' if send_real else 'Simulado' }}</strong><span>Envio</span></div>
+      <div><strong>{{ 'Ligados' if commands_enabled else 'Desligados' }}</strong><span>Comandos</span></div>
+      <div><strong>{{ 'OK' if allowed_chat_ids_configured else 'Livre/local' }}</strong><span>Chat permitido</span></div>
+    </div>
+    <p><strong>Token:</strong> {{ bot_token_masked or 'não informado' }}</p>
+    <p><strong>URL pública detectada:</strong> {{ public_base_url }}</p>
+    <p class="muted">Para envio real, configure o .env e ligue <code>BRECHORISEE_TELEGRAM_SEND_REAL=1</code>.</p>
+  </article>
+
+  <article class="card">
+    <p class="eyebrow">Teste rápido</p>
+    <h2>Enviar/Simular comando</h2>
+    <form method="post" action="/api/telegram/control" target="_blank" class="stack">
+      <label>Comando
+        <input name="text" value="/painel" placeholder="/painel, /atual, /proxima, /reservar Maria | 11999999999">
+      </label>
+      <button class="btn" type="submit">Processar comando</button>
+    </form>
+    <form method="post" action="/api/telegram/test" target="_blank" class="stack" style="margin-top:12px">
+      <label>Mensagem de teste
+        <input name="message" value="Teste BRECHORISEE Telegram">
+      </label>
+      <button class="btn ghost" type="submit">Enviar teste</button>
+    </form>
+  </article>
+</section>
+
+<section class="card">
+  <p class="eyebrow">Comandos úteis na live</p>
+  <div class="quick-grid">
+    <code>/comandos</code>
+    <code>/comandos live</code>
+    <code>/comandos pedido</code>
+    <code>/painel</code>
+    <code>/atual</code>
+    <code>/fila</code>
+    <code>/proxima</code>
+    <code>/addfila BLUSA-023</code>
+    <code>/reservar Maria | 11999999999</code>
+    <code>/espera Ana</code>
+    <code>/vendida</code>
+    <code>/pago Maria</code>
+    <code>/carrinho Maria</code>
+    <code>/resumo_live</code>
+    <code>/pedido</code>
+    <code>/pedido ID</code>
+    <code>/pedido ID pago</code>
+  </div>
+</section>
+
+<section class="grid two">
+  <article class="card">
+    <p class="eyebrow">Status geral</p>
+    <pre style="white-space:pre-wrap">{{ status_text }}</pre>
+  </article>
+  <article class="card">
+    <p class="eyebrow">Alertas ativos</p>
+    <ul>
+      <li>Pedidos: {{ 'sim' if notify_orders else 'não' }}</li>
+      <li>Live: {{ 'sim' if notify_live else 'não' }}</li>
+      <li>Comentários: {{ 'sim' if notify_comments else 'não' }}</li>
+      <li>Reservas: {{ 'sim' if notify_reservations else 'não' }}</li>
+      <li>Fila de espera: {{ 'sim' if notify_waitlist else 'não' }}</li>
+      <li>Pagamentos: {{ 'sim' if notify_payments else 'não' }}</li>
+    </ul>
+    <p class="muted">Esses alertas são controlados pelo arquivo .env.</p>
+  </article>
+</section>
+
+<section class="card">
+  <p class="eyebrow">Últimas mensagens</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Direção</th><th>Status</th><th>Chat</th><th>Usuário</th><th>Mensagem</th><th>Data</th></tr></thead>
+      <tbody>
+        {% for m in messages %}
+          <tr>
+            <td>#{{ m.id }}</td>
+            <td>{{ m.direction }}</td>
+            <td>{{ m.status }}</td>
+            <td>{{ m.chat_id }}</td>
+            <td>{{ m.username }}</td>
+            <td style="max-width:420px;white-space:pre-wrap">{{ m.text }}</td>
+            <td>{{ m.created_at }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7">Nenhuma mensagem registrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <p class="eyebrow">Comprovantes recebidos</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Origem</th><th>Pedido</th><th>Cliente</th><th>Status</th><th>Legenda</th><th>Data</th></tr></thead>
+      <tbody>
+        {% for p in payment_proofs %}
+          <tr>
+            <td>#{{ p.id }}</td>
+            <td>{{ p.source }}</td>
+            <td>{{ p.order_id or '-' }}</td>
+            <td>{{ p.customer_name or '-' }}</td>
+            <td>{{ p.status }}</td>
+            <td>{{ p.caption or '-' }}</td>
+            <td>{{ p.created_at }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7">Nenhum comprovante recebido.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-br"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Relatório de inventário</title><style>
+body{font-family:Arial,sans-serif;padding:20px;color:#3d261f}.card{border:1px solid #ddd;border-radius:16px;padding:16px;margin:10px 0}table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #eee;text-align:left}@media print{button{display:none}}
+</style></head><body>
+<h1>Relatório de Inventário BRECHORISEE</h1>
+<p>Gerado em {{ generated_at }}</p>
+<div class="card">
+  <h2>Sessão #{{ summary.session.id }} - {{ summary.session.name }}</h2>
+  <p>Status: {{ summary.session.status }} | Operadora: {{ summary.session.operator_name }}</p>
+  <p>Escaneadas: {{ summary.scanned_total }} | OK: {{ summary.ok_total }} | Não encontradas: {{ summary.not_found_total }} | Duplicadas: {{ summary.duplicate_total }}</p>
+</div>
+<div class="card">
+<h2>Últimas leituras</h2>
+<table><tr><th>Código</th><th>Peça</th><th>Status</th><th>Quando</th></tr>
+{% for x in summary.recent_scans %}
+<tr><td>{{ x.code }}</td><td>{{ x.product_title or '-' }}</td><td>{{ x.scan_status }}</td><td>{{ x.created_at }}</td></tr>
+{% endfor %}
+</table>
+</div>
+<button onclick="window.print()">Imprimir / Salvar PDF</button>
+<button onclick="location.href='/inventario-profissional'">Voltar</button>
+</body></html>

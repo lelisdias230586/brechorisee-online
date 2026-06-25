@@ -1,0 +1,68 @@
+{% extends "public_store_base.html" %}
+{% block store_content %}
+<section class="public-product-layout">
+  <article class="public-product-photo">
+    {% if product.image_filename %}
+      <img src="{{ url_for('static', path='/uploads/' ~ product.image_filename) }}" alt="{{ product.title }}">
+    {% else %}
+      <div class="photo-placeholder">sem foto</div>
+    {% endif %}
+  </article>
+  <article class="public-product-info">
+    <p class="eyebrow">Área da cliente • {{ product.code }}</p>
+    <h1>{{ product.title }}</h1>
+    <p class="price-big">{{ product.sale_price|money }}</p>
+    <div class="info-grid compact-info">
+      <span>Tamanho</span><strong>{{ product.size or '-' }}</strong>
+      <span>Marca</span><strong>{{ product.brand or '-' }}</strong>
+      <span>Cor</span><strong>{{ product.color or '-' }}</strong>
+      <span>Estado</span><strong>{{ product.condition or '-' }}</strong>
+    </div>
+    <div class="inline-actions">
+      <button class="btn primary add-to-cart-btn" type="button" data-code="{{ product.code }}" data-title="{{ product.title }}" data-price="{{ product.sale_price }}" data-photo="{{ url_for('static', path='/uploads/' ~ product.image_filename) if product.image_filename else '' }}">Adicionar à sacola</button>
+      <a class="btn ghost" href="brechorisee://peca?id={{ product.id }}">Abrir peça no app</a>
+      <a class="btn ghost" href="/app/cliente">Baixar app</a>
+      <a class="btn ghost" href="/cliente/tutorial">Como usar</a>
+      <a class="btn ghost" href="/cliente/vitrine">Voltar à vitrine</a>
+    </div>
+    <p class="hint">Logada como {{ account.name }}. Sua sacola usa o fluxo seguro de pedido online.</p>
+  </article>
+</section>
+
+{% if media %}
+<section class="panel media-panel">
+  <div class="section-head no-margin">
+    <div><p class="eyebrow">Galeria</p><h2>Fotos e vídeos</h2></div>
+  </div>
+  <div class="media-gallery">
+    {% for item in media %}
+      <article class="media-tile">
+        {% if item.media_type == 'video' %}
+          <video src="{{ url_for('static', path='/uploads/' ~ item.filename) }}" controls preload="metadata"></video>
+        {% else %}
+          <img src="{{ url_for('static', path='/uploads/' ~ item.filename) }}" alt="{{ product.title }}">
+        {% endif %}
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if similar %}
+<section class="section-head"><div><p class="eyebrow">Você pode gostar</p><h2>Peças parecidas</h2></div></section>
+<section class="store-grid modern-grid">
+  {% for p in similar %}
+    <article class="store-product-card modern-card">
+      <a href="/cliente/peca/{{ p.code }}" class="store-product-photo modern-photo">
+        {% if p.image_filename %}<img src="{{ url_for('static', path='/uploads/' ~ p.image_filename) }}" alt="{{ p.title }}">{% else %}<span>sem foto</span>{% endif %}
+      </a>
+      <div class="store-product-info">
+        <strong>{{ p.title }}</strong>
+        <small>{{ p.size or 'tam. único' }} • {{ p.brand or 'sem marca' }}</small>
+        <b>{{ p.sale_price|money }}</b>
+      </div>
+    </article>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

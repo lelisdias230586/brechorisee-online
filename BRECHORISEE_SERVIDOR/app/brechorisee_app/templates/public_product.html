@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#a84d3a">
+  <title>{{ product.title }} • BRECHORISEE</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+</head>
+<body class="public-product-page">
+  <main class="public-product-wrap">
+    <section class="public-card">
+      <div class="public-brand">
+        <img src="{{ url_for('static', path='/img/logo-brechorisee-tight.png') }}" alt="BRECHORISEE">
+        <div>
+          <strong>{{ settings.store_name or 'BRECHORISEE' }}</strong>
+          <small>Moda circular • peça única</small>
+        </div>
+      </div>
+
+      <div class="public-product-grid">
+        <article class="public-photo">
+          {% if product.image_filename %}
+            <img src="{{ url_for('static', path='/uploads/' ~ product.image_filename) }}" alt="{{ product.title }}">
+          {% else %}
+            <div class="photo-placeholder">sem foto</div>
+          {% endif %}
+          <span class="public-status {{ product.status }}">{{ product.status }}</span>
+        </article>
+
+        <article class="public-info">
+          <p class="eyebrow">{{ product.code }}</p>
+          <h1>{{ product.title }}</h1>
+          <h2>{{ product.sale_price|money }}</h2>
+
+          <div class="info-grid public-info-grid">
+            <span>Tipo</span><strong>{{ product.garment_type or product.category or '-' }}</strong>
+            <span>Tamanho</span><strong>{{ product.size or '-' }}</strong>
+            <span>Marca</span><strong>{{ product.brand or '-' }}</strong>
+            <span>Cor</span><strong>{{ product.color or '-' }}</strong>
+            <span>Estado</span><strong>{{ product.condition or '-' }}</strong>
+          </div>
+
+          {% if product.characteristics %}
+            <div class="text-block">
+              <h3>Detalhes</h3>
+              <p>{{ product.characteristics }}</p>
+            </div>
+          {% endif %}
+
+          <div class="inline-actions public-actions">
+            <a class="btn primary" href="{{ whatsapp_url }}" target="_blank">Quero essa pelo WhatsApp</a>
+            <a class="btn" href="{{ instagram_url }}" target="_blank">Ver Instagram</a>
+            <button class="btn ghost" id="copyPublicLinkBtn" type="button">Copiar link</button>
+          </div>
+
+          <p class="hint">Peça única. A disponibilidade pode mudar após reserva ou venda.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('copyPublicLinkBtn');
+    btn?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        btn.textContent = 'Link copiado!';
+        setTimeout(() => btn.textContent = 'Copiar link', 1300);
+      } catch (e) {}
+    });
+  });
+  </script>
+</body>
+</html>

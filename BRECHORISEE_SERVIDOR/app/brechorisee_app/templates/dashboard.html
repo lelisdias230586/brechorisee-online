@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block page_title %}Painel do brechorisee{% endblock %}
+{% block content %}
+<section class="stats-grid">
+  <article class="stat-card">
+    <span>Disponíveis</span>
+    <strong>{{ stats.total_active }}</strong>
+    <small>{{ stats.total_reserved }} reservadas</small>
+  </article>
+  <article class="stat-card">
+    <span>Vendidas</span>
+    <strong>{{ stats.total_sold }}</strong>
+    <small>baixa automática no caixa</small>
+  </article>
+  <article class="stat-card">
+    <span>Valor em estoque</span>
+    <strong>{{ stats.stock_value|money }}</strong>
+    <small>margem estimada: {{ stats.stock_margin|money }}</small>
+  </article>
+  <article class="stat-card glow">
+    <span>Vendas de hoje</span>
+    <strong>{{ stats.sales_today|money }}</strong>
+    <small>{{ stats.entries_today }} entradas • compras {{ stats.purchases_today|money }}</small>
+  </article>
+</section>
+
+<section class="panel hero-panel">
+  <div>
+    <p class="eyebrow">Fluxo principal</p>
+    <h2>Cadastre, etiquete, venda e acompanhe o giro de cada peça.</h2>
+    <p>
+      Cada peça recebe foto, código próprio e QR Code. No caixa, você pode adicionar
+      por código digitado, QR lido pela câmera ou reconhecimento por foto quando a etiqueta sumir.
+      A IA local ajuda a apontar peças paradas, prováveis tendências internas e sugestões de ação.
+    </p>
+    <div class="inline-actions">
+      <a class="btn primary" href="/products/new">Cadastrar nova peça</a>
+      <a class="btn" href="/cashier">Abrir caixa</a>
+      <a class="btn ghost" href="/reports">Ver gráficos</a>
+      <a class="btn ghost" href="/ai">Abrir IA moda</a>
+    </div>
+  </div>
+  <div class="feature-stack">
+    <div class="brand-hero-card">
+      <img src="{{ url_for('static', path='/img/logo-brechorisee-tight.png') }}" alt="BRECHORISEE Moda Circular">
+      <small>Identidade visual aplicada no sistema, etiquetas e app.</small>
+    </div>
+    <span>📷 Reconhecimento visual</span>
+    <span>🏷️ QR Code por peça</span>
+    <span>🔤 Código curto com um nome e um número</span>
+    <span>📊 Vendas, compras e estoque</span>
+    <span>🧠 IA local de giro e tendência</span>
+  </div>
+</section>
+
+<section class="stats-grid compact-stats">
+  <article class="stat-card">
+    <span>Estoque parado</span>
+    <strong>{{ stats.slow_stock }}</strong>
+    <small>peças com 90+ dias sem venda</small>
+  </article>
+  <article class="stat-card">
+    <span>Vendas totais</span>
+    <strong>{{ stats.sales_total|money }}</strong>
+    <small>histórico registrado no caixa</small>
+  </article>
+  <article class="stat-card">
+    <span>Custo em estoque</span>
+    <strong>{{ stats.stock_cost|money }}</strong>
+    <small>base para margem/repasse</small>
+  </article>
+  <article class="stat-card">
+    <span>Atalhos</span>
+    <div class="mini-actions">
+      <a href="/stock-history">Tempo estocado</a>
+      <a href="/labels">Etiquetas QR</a>
+    </div>
+  </article>
+</section>
+
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Últimos cadastros</p>
+    <h2>Peças recentes</h2>
+  </div>
+  <a href="/products">Ver todas</a>
+</section>
+
+<div class="product-grid">
+  {% for p in stats.latest %}
+    {% include "partials/product_card.html" %}
+  {% else %}
+    <div class="empty-state">
+      <h3>Nenhuma peça cadastrada ainda.</h3>
+      <p>Comece pelo cadastro de peças com foto para liberar QR Code e busca visual.</p>
+      <a class="btn primary" href="/products/new">Cadastrar a primeira peça</a>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

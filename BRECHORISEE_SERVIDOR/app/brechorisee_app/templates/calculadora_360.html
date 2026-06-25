@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block page_title %}Calculadora BRECHORISEE{% endblock %}
+{% block content %}
+<section class="panel hero-panel">
+  <div>
+    <p class="eyebrow">Preço • margem • consignado</p>
+    <h2>Calcule preço ideal, lucro e divisão do consignado.</h2>
+    <p>Use para precificar peças, calcular comissão do brechó e saber quanto fica para fornecedora/cliente.</p>
+  </div>
+</section>
+
+<section class="grid two-columns">
+  <article class="panel">
+    <form id="calcForm" class="stack-form">
+      <label>Custo da peça<input name="cost_price" inputmode="decimal" placeholder="Ex.: 25,00"></label>
+      <label>Custo fixo/embalagem<input name="fixed_cost" inputmode="decimal" value="0"></label>
+      <label>Margem desejada %<input name="desired_margin_pct" inputmode="decimal" value="60"></label>
+      <label>Comissão BRECHORISEE % no consignado<input name="commission_pct" inputmode="decimal" value="40"></label>
+      <label>Desconto previsto %<input name="discount_pct" inputmode="decimal" value="0"></label>
+      <button class="btn primary" type="submit">Calcular</button>
+    </form>
+  </article>
+  <article class="panel" id="calcResult">
+    <p class="eyebrow">Resultado</p>
+    <p class="hint">Preencha os dados e clique em calcular.</p>
+  </article>
+</section>
+
+<script>
+document.getElementById('calcForm').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  const data = Object.fromEntries(new FormData(ev.target).entries());
+  const res = await fetch('/api/calculadora/preco', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+  const out = await res.json();
+  const money = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  document.getElementById('calcResult').innerHTML = out.ok ? `
+    <p class="eyebrow">Resultado</p>
+    <div class="stats-grid compact">
+      <article class="stat-card"><span>Preço sugerido</span><strong>${money(out.suggested_price)}</strong><small>antes do desconto</small></article>
+      <article class="stat-card"><span>Preço líquido</span><strong>${money(out.price_after_discount)}</strong><small>após desconto previsto</small></article>
+      <article class="stat-card"><span>Lucro bruto</span><strong>${money(out.gross_profit)}</strong><small>${out.gross_margin_pct}% de margem</small></article>
+      <article class="stat-card glow"><span>Brechó / Cliente</span><strong>${money(out.store_amount)} / ${money(out.consignor_amount)}</strong><small>divisão consignado</small></article>
+    </div>
+  ` : `<p class="alert error">${out.message || 'Erro ao calcular.'}</p>`;
+});
+</script>
+{% endblock %}

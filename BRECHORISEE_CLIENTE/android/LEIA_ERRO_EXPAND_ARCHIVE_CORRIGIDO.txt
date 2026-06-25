@@ -1,0 +1,19 @@
+BRECHORISEE - Correção do compilador Android
+
+Esta versão corrige o erro:
+Expand-Archive -Path '' -DestinationPath ''
+
+O problema estava no arquivo .bat, porque algumas variáveis do Windows eram lidas vazias dentro do bloco de instalação do Android SDK.
+
+Como usar:
+1. Extraia este ZIP em uma pasta simples, por exemplo:
+   C:\Brechorisee
+2. Entre em:
+   brechorisee_android
+3. Dê dois cliques em:
+   COMPILAR_APK_WINDOWS.bat
+
+Se uma tentativa antiga deixou o Android SDK incompleto, apague esta pasta antes de rodar novamente:
+%LOCALAPPDATA%\Android\Sdk\cmdline-tools\latest
+
+Depois rode COMPILAR_APK_WINDOWS.bat novamente.

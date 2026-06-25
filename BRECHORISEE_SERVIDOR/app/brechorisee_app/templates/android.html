@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block page_title %}App Android BRECHORISEE{% endblock %}
+{% block content %}
+<section class="panel hero-panel mobile-setup-hero">
+  <div>
+    <p class="eyebrow">Android sem Android Studio</p>
+    <h2>App BRECHORISEE conectado ao banco local do sistema.</h2>
+    <p>
+      O banco de dados principal continua local no computador, no arquivo SQLite do sistema.
+      O app Android abre o mesmo sistema pela rede Wi‑Fi, então o cadastro, fotos, caixa, vendas,
+      estoque e relatórios ficam interligados com o computador.
+    </p>
+    <div class="phone-url-box">
+      <span>Endereço para configurar no app Android</span>
+      <strong id="phoneUrl">{{ phone_url }}</strong>
+      <button class="btn primary" id="copyPhoneUrlBtn" type="button">Copiar endereço</button>
+    </div>
+    <div class="inline-actions">
+      <a class="btn primary" href="/products/new">Cadastrar peça</a>
+      <a class="btn" href="/cashier">Abrir caixa</a>
+      <a class="btn ghost" href="/celular">Instruções celular</a>
+    </div>
+  </div>
+  <div class="feature-stack">
+    <span>📱 app Android nativo com WebView</span>
+    <span>🗄️ usa o banco local do computador</span>
+    <span>📸 câmera e envio de fotos pelo celular</span>
+    <span>🔎 busca digitada, QR/código e reconhecimento</span>
+    <span>🎙️ voz nativa do Android para preencher campos</span>
+    <span>☁️ sem nuvem obrigatória</span>
+  </div>
+</section>
+
+<section class="mobile-feature-grid">
+  <article class="panel mobile-feature-card">
+    <h3>1. Ligue o servidor local</h3>
+    <p>No computador, abra <strong>ABRIR_SERVIDOR_PARA_APP_ANDROID.bat</strong> ou <strong>INICIAR_PARA_CELULAR.bat</strong>.</p>
+  </article>
+  <article class="panel mobile-feature-card">
+    <h3>2. Compile o APK por .bat</h3>
+    <p>Na pasta <strong>brechorisee_android</strong>, dê dois cliques em <strong>COMPILAR_APK_WINDOWS.bat</strong>. Não precisa abrir Android Studio.</p>
+  </article>
+  <article class="panel mobile-feature-card">
+    <h3>3. Instale no celular</h3>
+    <p>Copie o arquivo <strong>BRECHORISEE_android.apk</strong> para o Android ou use <strong>INSTALAR_NO_CELULAR_USB.bat</strong>. Ao usar 🎙️, o app pedirá permissão de microfone.</p>
+  </article>
+  <article class="panel mobile-feature-card">
+    <h3>4. Configure uma vez</h3>
+    <p>Ao abrir o app, informe o endereço <strong>{{ phone_url }}</strong>. Depois o app lembra esse endereço.</p>
+  </article>
+</section>
+
+<section class="panel mobile-camera-note">
+  <p class="eyebrow">Como o banco fica interligado</p>
+  <h2>Um banco local, dois acessos</h2>
+  <p>
+    O arquivo do banco fica em: <code>{{ db_path }}</code>. O computador roda o sistema local e o app Android acessa esse mesmo sistema pela rede.
+    Assim, quando você cadastra uma peça pelo celular, ela aparece no computador; quando vende no caixa, a baixa também vale para os dois.
+  </p>
+  <p>
+    Se o computador estiver desligado, fora do Wi‑Fi ou bloqueado pelo firewall, o app não consegue acessar o banco. Nesse caso, abra o servidor local e libere a porta 8000.
+  </p>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.querySelector("#copyPhoneUrlBtn");
+  const url = document.querySelector("#phoneUrl")?.textContent?.trim();
+  if (!btn || !url) return;
+  btn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      btn.textContent = "Copiado";
+      setTimeout(() => btn.textContent = "Copiar endereço", 1600);
+    } catch (err) {
+      btn.textContent = "Copie manualmente";
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "public_store_base.html" %}
+{% block store_content %}
+<section class="store-hero-modern customer-access-hero">
+  <div class="hero-copy">
+    <p class="eyebrow">Administração BRECHORISEE</p>
+    <h1>{% if has_admin %}Entrar no painel administrativo.{% else %}Criar primeiro acesso administrativo.{% endif %}</h1>
+    <p>Esta tela é somente para a administradora. O cadastro de cliente fica separado na Área da cliente.</p>
+    <div class="inline-actions">
+      <a class="btn ghost" href="/admin-acesso">Acesso admin</a>
+      <a class="btn ghost" href="/cliente">Área da cliente</a>
+      <a class="btn ghost" href="/admin-recuperar">Recuperar admin</a>
+    </div>
+  </div>
+  <div class="hero-card">
+    <strong>Acesso administrativo</strong>
+    <span>Use para estoque, vendas, caixa, live, repescagem, entregas e configurações.</span>
+    <small>Endereço direto: /admin-acesso</small>
+  </div>
+</section>
+
+<section class="auth-card-wrap">
+  <article class="panel auth-card">
+    {% if error %}<div class="alert danger">{{ error }}</div>{% endif %}
+
+    {% if not has_admin %}
+      <div class="alert success">
+        <strong>Primeiro acesso administrativo disponível.</strong><br>
+        Crie a administradora aqui. Não use o link “Criar minha senha” da Área da cliente, pois aquele cadastro é somente para clientes.
+      </div>
+      <p class="eyebrow">Primeiro acesso admin</p>
+      <h2>Criar administradora</h2>
+      <form method="post" action="/admin-acesso/criar" class="stack-form">
+        <input type="hidden" name="next" value="{{ next or '/' }}">
+        <label>Nome da administradora
+          <input name="name" required placeholder="Ex.: BRECHORISEE Admin">
+        </label>
+        <label>E-mail ou usuário
+          <input name="email" placeholder="admin@brechorisee.com">
+        </label>
+        <label>Senha
+          <input name="password" type="password" required placeholder="Mínimo 6 caracteres">
+        </label>
+        <button class="btn primary wide" type="submit">Criar primeiro acesso administrativo</button>
+      </form>
+    {% else %}
+      <p class="eyebrow">Entrar</p>
+      <h2>Acesso administrativo</h2>
+      <form method="post" action="/admin-acesso/login" class="stack-form">
+        <input type="hidden" name="next" value="{{ next or '/' }}">
+        <label>E-mail ou nome
+          <input name="email" required placeholder="Usuário admin">
+        </label>
+        <label>Senha
+          <input name="password" type="password" required placeholder="Senha">
+        </label>
+        <button class="btn primary wide" type="submit">Entrar no sistema</button>
+      </form>
+      <p class="hint" style="margin-top:14px;">
+        Para criar outro administrador ou alterar senhas, entre e abra <strong>/usuarios</strong>.
+        Se esqueceu a senha admin, use <a href="/admin-recuperar">Recuperar admin</a> com o token de recuperação configurado no Render.
+        O cadastro de “Criar minha senha” da Área da cliente não cria administradora.
+      </p>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}

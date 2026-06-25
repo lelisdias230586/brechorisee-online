@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block page_title %}Buscar peça{% endblock %}
+{% block content %}
+<section class="panel hero-panel recognize-tools">
+  <div>
+    <p class="eyebrow">Busca visual</p>
+    <h2>Achou uma peça sem etiqueta?</h2>
+    <p>Envie uma foto da peça e o sistema compara com a foto principal e com as fotos complementares cadastradas para você conferir código, QR e preço.</p>
+    <form class="upload-inline" method="post" action="/recognize" enctype="multipart/form-data">
+      <label class="camera-field recognize-camera">
+        <span class="camera-card">
+          <input class="mobile-photo-input" type="file" name="image" accept="image/*" capture="environment" data-preview="#recognizePreview" required>
+          <span class="camera-card-title">📸 Tirar foto da peça</span>
+          <small>Funciona muito bem no celular para peças sem etiqueta.</small>
+          <img id="recognizePreview" class="photo-preview" alt="Prévia da busca" hidden>
+        </span>
+      </label>
+      <button class="btn primary" type="submit">Reconhecer</button>
+    </form>
+  </div>
+
+  <div class="typed-search-card">
+    <p class="eyebrow">Busca por digitação</p>
+    <h2>Procure sem câmera também</h2>
+    <p>Digite código, tipo, cor, marca, tamanho, característica, estação, estilo ou fornecedora.</p>
+    <form class="typed-search-form" method="get" action="/recognize">
+      <input name="q" value="{{ text_q or '' }}" autocomplete="off" placeholder="Ex.: vestido preto P, jeans wide leg, couro, Zara...">
+      <button class="btn primary" type="submit">Procurar digitando</button>
+    </form>
+    <small class="muted-line">A busca digitada mostra apenas peças disponíveis para venda.</small>
+  </div>
+
+  {% if query_image %}
+    <div class="query-preview">
+      <span>Imagem pesquisada</span>
+      <img src="{{ url_for('static', path='/uploads/' ~ query_image) }}" alt="Imagem pesquisada">
+    </div>
+  {% endif %}
+</section>
+
+{% if text_results is not none %}
+  <section class="section-head">
+    <div>
+      <p class="eyebrow">Resultados digitados</p>
+      <h2>Peças encontradas por texto</h2>
+    </div>
+    <a class="btn ghost" href="/products?q={{ text_q }}">Ver no estoque</a>
+  </section>
+  <div class="recognition-grid">
+    {% for p in text_results %}
+      <article class="product-card result-card">
+        <a href="/products/{{ p.id }}" class="product-photo">
+          {% if p.image_filename %}
+            <img src="{{ url_for('static', path='/uploads/' ~ p.image_filename) }}" alt="{{ p.title }}">
+          {% else %}
+            <span>sem foto</span>
+          {% endif %}
+          <em class="status {{ p.status }}">{{ p.status }}</em>
+        </a>
+        <div class="product-body">
+          <strong>{{ p.title }}</strong>
+          <small>{{ p.code }} • {{ p.garment_type or '-' }} • {{ p.size or '-' }}</small>
+          <div class="product-meta">
+            <span>{{ p.color or 'cor não informada' }}</span>
+            <b>{{ p.sale_price|money }}</b>
+          </div>
+          <a class="btn ghost wide" href="/products/{{ p.id }}">Abrir cadastro</a>
+        </div>
+      </article>
+    {% else %}
+      <div class="empty-state">
+        <h3>Nenhuma peça disponível encontrada.</h3>
+        <p>Tente outra palavra, parte do código, cor, tamanho, estilo ou marca.</p>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if results is not none %}
+  <section class="section-head">
+    <div>
+      <p class="eyebrow">Resultados por foto</p>
+      <h2>Peças mais prováveis</h2>
+    </div>
+  </section>
+  <div class="recognition-grid">
+    {% for item in results %}
+      {% set p = item.product %}
+      <article class="product-card result-card">
+        <a href="/products/{{ p.id }}" class="product-photo">
+          {% if p.image_filename %}
+            <img src="{{ url_for('static', path='/uploads/' ~ p.image_filename) }}" alt="{{ p.title }}">
+          {% else %}
+            <span>sem foto</span>
+          {% endif %}
+          <em class="status disponivel">{{ item.score }}%</em>
+        </a>
+        <div class="product-body">
+          <strong>{{ p.title }}</strong>
+          <small>{{ p.code }} • {{ p.garment_type or '-' }} • {{ p.size or '-' }}</small>
+          <div class="product-meta">
+            <span>{{ p.color or 'cor não informada' }}</span>
+            <b>{{ p.sale_price|money }}</b>
+          </div>
+          <a class="btn ghost wide" href="/products/{{ p.id }}">Abrir cadastro</a>
+        </div>
+      </article>
+    {% else %}
+      <div class="empty-state">
+        <h3>Nenhuma peça com foto cadastrada para comparar.</h3>
+        <p>Cadastre foto principal ou fotos complementares nas peças para usar o reconhecimento.</p>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

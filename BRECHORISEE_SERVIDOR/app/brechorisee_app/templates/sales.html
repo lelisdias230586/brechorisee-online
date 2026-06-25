@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block page_title %}Vendas{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Histórico</p>
+      <h2>Últimas vendas</h2>
+    </div>
+    <a class="btn primary" href="/cashier">Nova venda</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Código</th><th>Cliente</th><th>Pagamento</th><th>Total</th><th>Data</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for sale in sales %}
+          <tr>
+            <td><strong>{{ sale.sale_code }}</strong></td>
+            <td>{{ sale.customer or '-' }}</td>
+            <td>{{ sale.payment_method }}</td>
+            <td>{{ sale.total|money }}</td>
+            <td>{{ sale.created_at }}</td>
+            <td><a href="/sales/{{ sale.id }}">Ver</a></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6">Nenhuma venda registrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block page_title %}Recibo de consignado{% endblock %}
+{% block content %}
+<section class="panel">
+  <p class="eyebrow">Recibo BRECHORISEE</p>
+  <h2>Fechamento de montante / consignado</h2>
+  <p>Gerado em {{ generated_at }}</p>
+  <hr>
+  <h3>{{ summary.customer.name }}</h3>
+  <p>
+    Telefone: {{ summary.customer.phone or '-' }}<br>
+    Instagram: {{ summary.customer.instagram or '-' }}
+  </p>
+  <div class="grid three-columns">
+    <div class="metric-card"><span>Entradas</span><strong>{{ summary.credit_total|money }}</strong></div>
+    <div class="metric-card"><span>Retiradas</span><strong>{{ summary.debit_total|money }}</strong></div>
+    <div class="metric-card"><span>Saldo final</span><strong>{{ summary.balance|money }}</strong></div>
+  </div>
+  <p><strong>Status:</strong> {{ summary.status_label }}</p>
+  <p>{{ summary.next_action }}</p>
+</section>
+
+<section class="panel">
+  <p class="eyebrow">Movimentos</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th>Saldo</th><th>Peça</th><th>Obs.</th></tr></thead>
+      <tbody>
+      {% for m in summary.movements %}
+        <tr>
+          <td>{{ m.created_at }}</td>
+          <td>{{ m.movement_type }}</td>
+          <td>{{ m.amount|money }}</td>
+          <td>{{ m.balance_after|money }}</td>
+          <td>{{ m.code or m.product_title or '-' }}</td>
+          <td>{{ m.notes or '' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel print-actions">
+  <button class="btn primary" onclick="window.print()">Imprimir / salvar PDF</button>
+  <a class="btn ghost" href="/consignado-profissional">Voltar</a>
+</section>
+<style>
+@media print{.sidebar,.topbar,.print-actions,.mobile-bottom-nav{display:none!important}.panel{box-shadow:none;border:1px solid #ddd}}
+.metric-card{border:1px solid #ead8d0;border-radius:18px;padding:14px;background:#fffaf8}
+.metric-card span{display:block;color:#777}.metric-card strong{font-size:1.4rem}
+</style>
+{% endblock %}

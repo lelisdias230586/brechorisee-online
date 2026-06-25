@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block page_title %}Notificações das clientes{% endblock %}
+{% block content %}
+<section class="stats-grid">
+  <article class="stat-card"><span>Total de avisos</span><strong>{{ stats.total }}</strong><small>gerados</small></article>
+  <article class="stat-card"><span>Pendentes</span><strong>{{ stats.pendentes }}</strong><small>ainda não vistos</small></article>
+  <article class="stat-card"><span>Clientes ativas</span><strong>{{ stats.clientes_ativos }}</strong><small>com acesso</small></article>
+  <article class="stat-card"><span>Opt-in</span><strong>{{ stats.optin }}</strong><small>recebem novidades</small></article>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Novidades automáticas</p>
+      <h2>Mensagem pelo app e online</h2>
+      <p class="hint">Quando uma peça nova é cadastrada, o sistema cria aviso para as clientes respeitando a periodicidade escolhida. Não envia spam automático.</p>
+    </div>
+    <form method="post" action="/notificacoes/gerar-digest">
+      <button class="btn primary" type="submit">Gerar resumo das novidades</button>
+    </form>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Histórico</p>
+      <h2>Últimas notificações</h2>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Peça</th>
+          <th>Mensagem</th>
+          <th>Status</th>
+          <th>Criada</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for n in notifications %}
+        <tr>
+          <td>{{ n.customer_name }}<br><small>{{ n.customer_phone }}</small></td>
+          <td>{{ n.product_title or '-' }}<br><small>{{ n.product_code or '' }}</small></td>
+          <td>{{ n.message }}</td>
+          <td>{{ 'Visualizada' if n.read_at else 'Pendente' }}</td>
+          <td>{{ n.created_at|date_br }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">Nenhuma notificação gerada ainda.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

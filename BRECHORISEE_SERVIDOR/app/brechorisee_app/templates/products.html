@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block page_title %}Peças cadastradas{% endblock %}
+{% block content %}
+<section class="panel">
+  <form class="search-row" method="get" action="/products">
+    <input name="q" value="{{ q }}" autocomplete="off" inputmode="search" placeholder="Digite código, nome, tipo, cor, marca, estampa, tamanho ou característica...">
+    <select name="status">
+      <option value="todos" {{ 'selected' if status == 'todos' else '' }}>Todos os status</option>
+      <option value="disponivel" {{ 'selected' if status == 'disponivel' else '' }}>Disponíveis</option>
+      <option value="reservado" {{ 'selected' if status == 'reservado' else '' }}>Reservadas</option>
+      <option value="vendido" {{ 'selected' if status == 'vendido' else '' }}>Vendidas</option>
+      <option value="arquivado" {{ 'selected' if status == 'arquivado' else '' }}>Arquivadas</option>
+    </select>
+    <button class="btn primary" type="submit">Pesquisar digitando</button>
+    <button class="btn" id="productScanBtn" type="button">Ler etiqueta</button>
+    <a class="btn" href="/products/new">Nova peça</a>
+  </form>
+  <div class="mobile-scanner-panel" id="productScannerPanel" hidden>
+    <video id="productScanVideo" class="qr-video" playsinline muted></video>
+    <p class="hint" id="productScanHint">Aponte para o QR/código da etiqueta. Se o navegador não permitir, pesquise digitando o código.</p>
+    <button class="btn ghost" id="productScanStopBtn" type="button">Parar câmera</button>
+  </div>
+</section>
+
+<div class="product-grid">
+  {% for p in products %}
+    {% include "partials/product_card.html" %}
+  {% else %}
+    <div class="empty-state">
+      <h3>Nenhuma peça encontrada.</h3>
+      <p>Tente outro termo ou cadastre uma nova peça.</p>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.querySelector("#productScanBtn");
+  const stopBtn = document.querySelector("#productScanStopBtn");
+  const panel = document.querySelector("#productScannerPanel");
+  const video = document.querySelector("#productScanVideo");
+  const hint = document.querySelector("#productScanHint");
+  const q = document.querySelector("input[name='q']");
+  if (!btn || !window.BrechoriseeCamera) return;
+
+  btn.addEventListener("click", async () => {
+    panel.hidden = false;
+    await window.BrechoriseeCamera.startBarcodeScanner({
+      video,
+      hint,
+      onCode: (code) => {
+        q.value = code;
+        window.BrechoriseeCamera.stopBarcodeScanner(video);
+        document.querySelector(".search-row").submit();
+      }
+    });
+  });
+  stopBtn?.addEventListener("click", () => {
+    window.BrechoriseeCamera.stopBarcodeScanner(video);
+    panel.hidden = true;
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block page_title %}Módulos 360 BRECHORISEE{% endblock %}
+{% block content %}
+<section class="panel hero-panel">
+  <div>
+    <p class="eyebrow">v4.9 • arquitetura modular</p>
+    <h2>Operação completa: preço, montante, inventário, estilo e manutenção.</h2>
+    <p>Os novos módulos ficam separados por função para facilitar manutenção e reduzir erros. Comece pelo fluxo que quer executar.</p>
+  </div>
+  <div class="inline-actions">
+    <a class="btn primary" href="/calculadora">Abrir calculadora</a>
+    <a class="btn" href="/consignado">Montante cliente</a>
+    <a class="btn" href="/inventario-camera">Inventário câmera</a>
+  </div>
+</section>
+
+<section class="stats-grid">
+  <article class="stat-card"><span>Clientes</span><strong>{{ stats.customers }}</strong><small>base cadastrada</small></article>
+  <article class="stat-card"><span>Peças disponíveis</span><strong>{{ stats.products_available }}</strong><small>estoque atual</small></article>
+  <article class="stat-card"><span>Carteiras com saldo</span><strong>{{ stats.wallets }}</strong><small>montante ativo</small></article>
+  <article class="stat-card glow"><span>Saldo líquido</span><strong>{{ stats.wallet_balance|money }}</strong><small>entradas - baixas</small></article>
+</section>
+
+<section class="grid two-columns">
+  <article class="panel">
+    <p class="eyebrow">Fluxos recomendados</p>
+    <div class="quick-grid">
+      <a class="quick-card" href="/consignado"><strong>Montante consignado</strong><small>Adicione valor à cliente e retire peças por QR/código.</small></a>
+      <a class="quick-card" href="/inventario-camera"><strong>Inventário por câmera</strong><small>Leia etiquetas e confira status do estoque.</small></a>
+      <a class="quick-card" href="/consultor-estilo"><strong>Consultor Instagram</strong><small>Busque por @, cliente ou família e sugira peças.</small></a>
+      <a class="quick-card" href="/sistema/checklist"><strong>Checklist técnico</strong><small>Verifica APK, banco, link público e módulos.</small></a>
+    </div>
+  </article>
+
+  <article class="panel">
+    <p class="eyebrow">Últimos movimentos de montante</p>
+    {% if last_movements %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Cliente</th><th>Tipo</th><th>Valor</th><th>Saldo</th><th>Peça</th></tr></thead>
+          <tbody>
+          {% for m in last_movements %}
+            <tr>
+              <td>{{ m.customer_name or '-' }}</td>
+              <td>{{ m.movement_type }}</td>
+              <td>{{ m.amount|money }}</td>
+              <td>{{ m.balance_after|money }}</td>
+              <td>{{ m.code or m.product_title or '-' }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty-state">Nenhum movimento ainda.</p>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}

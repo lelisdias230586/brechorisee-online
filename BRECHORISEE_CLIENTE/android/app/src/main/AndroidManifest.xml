@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <queries>
+        <package android:name="com.instagram.android" />
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <application
+        android:allowBackup="false"
+        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:theme="@style/AppTheme"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:resizeableActivity="true"
+        android:supportsRtl="true">
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <service
+            android:name="com.brechorisee.cliente.LiveNotificationService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <service
+            android:name="com.brechorisee.cliente.LiveCompanionOverlayService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <activity
+            android:name="com.brechorisee.cliente.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="brechorisee-online.onrender.com" android:pathPrefix="/cliente" />
+                <data android:scheme="https" android:host="brechorisee-online.onrender.com" android:pathPrefix="/loja" />
+                <data android:scheme="https" android:host="brechorisee-online.onrender.com" android:pathPrefix="/live/peca-atual" />
+                <data android:scheme="https" android:host="brechorisee-online.onrender.com" android:pathPrefix="/live/companion" />
+                <data android:scheme="https" android:host="brechorisee-online.onrender.com" android:pathPrefix="/app/cliente" />
+                <data android:scheme="https" android:host="brechorisee-online.onrender.com" android:pathPrefix="/cliente/tutorial" />
+                <!-- Túneis públicos usados no Termux sem abrir porta. Requer recompilar o APK. -->
+                <data android:scheme="https" android:host="*.lhr.life" android:pathPrefix="/cliente" />
+                <data android:scheme="https" android:host="*.lhr.life" android:pathPrefix="/loja" />
+                <data android:scheme="https" android:host="*.lhr.life" android:pathPrefix="/live/peca-atual" />
+                <data android:scheme="https" android:host="*.lhr.life" android:pathPrefix="/live/companion" />
+                <data android:scheme="https" android:host="*.lhr.life" android:pathPrefix="/app/cliente" />
+                <data android:scheme="https" android:host="*.lhr.life" android:pathPrefix="/cliente/tutorial" />
+                <data android:scheme="https" android:host="*.localhost.run" android:pathPrefix="/cliente" />
+                <data android:scheme="https" android:host="*.localhost.run" android:pathPrefix="/loja" />
+                <data android:scheme="https" android:host="*.localhost.run" android:pathPrefix="/live/peca-atual" />
+                <data android:scheme="https" android:host="*.localhost.run" android:pathPrefix="/live/companion" />
+                <data android:scheme="https" android:host="*.localhost.run" android:pathPrefix="/app/cliente" />
+                <data android:scheme="https" android:host="*.localhost.run" android:pathPrefix="/cliente/tutorial" />
+                <data android:scheme="https" android:host="*.trycloudflare.com" android:pathPrefix="/cliente" />
+                <data android:scheme="https" android:host="*.trycloudflare.com" android:pathPrefix="/loja" />
+                <data android:scheme="https" android:host="*.trycloudflare.com" android:pathPrefix="/live/peca-atual" />
+                <data android:scheme="https" android:host="*.trycloudflare.com" android:pathPrefix="/live/companion" />
+                <data android:scheme="https" android:host="*.trycloudflare.com" android:pathPrefix="/app/cliente" />
+                <data android:scheme="https" android:host="*.trycloudflare.com" android:pathPrefix="/cliente/tutorial" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="brechorisee" android:host="pagamento" />
+                <data android:scheme="brechorisee" android:host="pedido" />
+                <data android:scheme="brechorisee" android:host="order" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="brechorisee" android:host="tutorial" />
+                <data android:scheme="brechorisee" android:host="como-usar" />
+                <data android:scheme="brechorisee" android:host="ajuda-cliente" />
+                <data android:scheme="brechorisee" android:host="produto" />
+                <data android:scheme="brechorisee" android:host="peca" />
+                <data android:scheme="brechorisee" android:host="product" />
+                <data android:scheme="brechorisee" android:host="live" />
+                <data android:scheme="brechorisee" android:host="live-companion" />
+                <data android:scheme="brechorisee" android:host="companion" />
+                <data android:scheme="brechorisee" android:host="aovivo" />
+                <data android:scheme="brechorisee" android:host="ao-vivo" />
+                <data android:scheme="brechorisee" android:host="carrinho" />
+                <data android:scheme="brechorisee" android:host="sacola" />
+                <data android:scheme="brechorisee" android:host="studio" />
+                <data android:scheme="brechorisee" android:host="caixa" />
+            </intent-filter>
+        </activity>
+
+    </application>
+</manifest>

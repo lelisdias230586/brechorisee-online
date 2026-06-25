@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#050505">
+  <title>BRECHORISEE • Modo apresentadora</title>
+  <style>
+    html,body{margin:0;background:#050505;color:#fff;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}.shell{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:0;min-height:100vh}.stage{position:relative;overflow:hidden;background:#111}.stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;opacity:.92;background:#050505}.fade{position:absolute;inset:auto 0 0 0;height:46%;background:linear-gradient(to top,rgba(0,0,0,.92),rgba(0,0,0,.2),transparent)}.info{position:absolute;left:24px;right:24px;bottom:24px;z-index:2}.code{display:inline-flex;background:#ff1c74;color:#fff;border-radius:12px;padding:10px 14px;font-weight:900}.title{font-size:clamp(2rem,5vw,5rem);margin:14px 0 8px;line-height:.95}.price{font-size:clamp(2rem,4vw,4rem);font-weight:950;color:#ffd7e5}.meta{display:flex;gap:10px;flex-wrap:wrap}.meta span{background:rgba(255,255,255,.16);backdrop-filter:blur(6px);padding:10px 13px;border-radius:999px;font-weight:800}.side{padding:18px;background:#160e0c;display:flex;flex-direction:column;gap:14px}.panel{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:14px}.btn{border:none;border-radius:18px;padding:16px 14px;font-weight:950;background:#a84d3a;color:#fff;font-size:1rem}.btn.ghost{background:rgba(255,255,255,.13)}.actions{display:grid;grid-template-columns:1fr;gap:10px}.timer{font-size:2.5rem;font-weight:950}.comments{display:grid;gap:10px;max-height:36vh;overflow:auto}.comment{background:rgba(255,255,255,.1);border-radius:16px;padding:10px}.muted{opacity:.76}.next{font-size:1.1rem;font-weight:800}.floating-controls.movable-ready{position:fixed;right:16px;bottom:18px;z-index:50;width:min(330px,calc(100vw - 32px));background:rgba(22,14,12,.92);border:1px solid rgba(255,255,255,.16);border-radius:24px;padding:10px;box-shadow:0 18px 45px rgba(0,0,0,.42);backdrop-filter:blur(12px)}.drag-handle{padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.14);text-align:center;font-size:.8rem;font-weight:900;cursor:grab;touch-action:none;user-select:none}@media(max-width:900px){.shell{grid-template-columns:1fr}.stage{min-height:68vh}.side{min-height:32vh}.title{font-size:2.5rem}}
+  </style>
+</head>
+<body>
+<main class="shell" data-session-id="{{ session_id }}">
+  <section class="stage">
+    <img id="photo" src="/static/img/logo-brechorisee-tight.png" alt="Peça atual">
+    <div class="fade"></div>
+    <div class="info">
+      <span class="code" id="code">AO VIVO</span>
+      <h1 class="title" id="title">Aguardando peça</h1>
+      <div class="price" id="price"></div>
+      <div class="meta"><span id="size">Tam. -</span><span id="status">status</span><span id="measurements">medidas</span></div>
+    </div>
+  </section>
+  <aside class="side">
+    <div class="panel"><div class="muted">Tempo na peça</div><div class="timer" id="timer">00:00</div></div>
+    <div class="panel"><div class="muted">Próxima peça</div><div class="next" id="next">Sem próxima</div></div>
+    <div class="actions floating-controls" id="presenterFloatingControls">
+      <button class="btn" id="nextBtn">Próxima peça</button>
+      <button class="btn ghost" id="reserveBtn">Reservar</button>
+      <button class="btn ghost" id="soldBtn">Vendida</button>
+      <button class="btn ghost" id="copyBtn">Copiar link</button>
+    </div>
+    <div class="panel"><strong>Comentários importantes</strong><div class="comments" id="comments"></div></div>
+  </aside>
+</main>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const sessionId = Number(document.querySelector('.shell').dataset.sessionId);
+  let state = null, current = null;
+  const $ = id => document.getElementById(id);
+  function installPresenterDrag() {
+    const box = document.getElementById('presenterFloatingControls');
+    if (!box || box.dataset.ready === '1') return;
+    box.dataset.ready = '1';
+    box.classList.add('movable-ready');
+    const handle = document.createElement('div');
+    handle.className = 'drag-handle';
+    handle.textContent = '⠿ mover controles da live';
+    box.insertBefore(handle, box.firstChild);
+    const saved = localStorage.getItem('brechorisee.drag.presenter.controls');
+    if (saved) {
+      try {
+        const pos = JSON.parse(saved);
+        box.style.left = Math.max(0, Number(pos.x || 0)) + 'px';
+        box.style.top = Math.max(0, Number(pos.y || 0)) + 'px';
+        box.style.right = 'auto';
+        box.style.bottom = 'auto';
+      } catch (e) {}
+    }
+    let sx=0, sy=0, ox=0, oy=0, dragging=false;
+    const move = ev => {
+      if (!dragging) return;
+      const p = ev.touches ? ev.touches[0] : ev;
+      box.style.right = 'auto';
+      box.style.bottom = 'auto';
+      box.style.left = Math.max(0, Math.min(window.innerWidth - 60, ox + p.clientX - sx)) + 'px';
+      box.style.top = Math.max(0, Math.min(window.innerHeight - 60, oy + p.clientY - sy)) + 'px';
+      ev.preventDefault();
+    };
+    const up = () => {
+      if (!dragging) return;
+      dragging = false;
+      const r = box.getBoundingClientRect();
+      localStorage.setItem('brechorisee.drag.presenter.controls', JSON.stringify({x:Math.round(r.left), y:Math.round(r.top)}));
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+      window.removeEventListener('touchmove', move);
+      window.removeEventListener('touchend', up);
+    };
+    const down = ev => {
+      const p = ev.touches ? ev.touches[0] : ev;
+      const r = box.getBoundingClientRect();
+      sx = p.clientX; sy = p.clientY; ox = r.left; oy = r.top; dragging = true;
+      window.addEventListener(ev.touches ? 'touchmove' : 'mousemove', move, {passive:false});
+      window.addEventListener(ev.touches ? 'touchend' : 'mouseup', up);
+      ev.preventDefault();
+    };
+    handle.addEventListener('mousedown', down);
+    handle.addEventListener('touchstart', down, {passive:false});
+  }
+  installPresenterDrag();
+  const mmss = s => `${String(Math.floor((s||0)/60)).padStart(2,'0')}:${String(Math.floor((s||0)%60)).padStart(2,'0')}`;
+  const post = async (url, params={}) => { const fd = new FormData(); Object.entries(params).forEach(([k,v])=>fd.append(k,String(v||''))); const res=await fetch(url,{method:'POST',body:fd,credentials:'same-origin'}); return await res.json(); };
+  async function load(){
+    const res = await fetch(`/api/live/central/${sessionId}`, {credentials:'same-origin'}); state = await res.json(); if(!state.ok) return;
+    current = state.current_product;
+    $('timer').textContent = mmss(state.current_elapsed_seconds);
+    if(current){
+      $('photo').src = current.image_url || '/static/img/logo-brechorisee-tight.png';
+      $('code').textContent = current.code || 'PEÇA';
+      $('title').textContent = current.title || 'Peça atual';
+      $('price').textContent = current.price_label || '';
+      $('size').textContent = `Tam. ${current.size || '-'}`;
+      $('status').textContent = current.status || '';
+      $('measurements').textContent = current.measurements || 'medidas';
+    }
+    $('next').textContent = state.next_product ? `${state.next_product.code} — ${state.next_product.title}` : 'Sem próxima';
+    $('comments').innerHTML = (state.waiting_answers || []).slice(-6).reverse().map(c=>`<div class="comment"><strong>${c.author_name}</strong><br>${c.message}<br><span class="muted">${c.intent_label}</span></div>`).join('') || '<p class="muted">Sem comentários pendentes.</p>';
+  }
+  $('nextBtn').onclick = async () => { await post(`/api/live/central/${sessionId}/next`); await load(); };
+  $('reserveBtn').onclick = async () => { const name = prompt('Cliente:'); if(name && current){ await post(`/api/live/central/${sessionId}/reserve`, {product_id:current.id, customer_name:name}); await load(); } };
+  $('soldBtn').onclick = async () => { if(current){ await post(`/api/live/central/${sessionId}/mark-sold`, {product_id:current.id}); await load(); } };
+  $('copyBtn').onclick = async () => { const link = current?.public_product_url || current?.short_url || location.origin + '/live/peca-atual'; await navigator.clipboard.writeText(link).catch(()=>{}); };
+  load(); setInterval(load, 4000); setInterval(()=>{ if(state){ state.current_elapsed_seconds=(state.current_elapsed_seconds||0)+1; $('timer').textContent=mmss(state.current_elapsed_seconds); } },1000);
+});
+</script>
+</body>
+</html>

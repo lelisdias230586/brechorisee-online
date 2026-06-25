@@ -1,0 +1,64 @@
+{% extends "public_store_base.html" %}
+{% block store_content %}
+<section class="store-hero-modern customer-dashboard">
+  <div class="hero-copy">
+    <p class="eyebrow">Minha conta</p>
+    <h1>Dados e senha da cliente.</h1>
+    <p>Altere seu WhatsApp, e-mail, Instagram, preferências e senha sem criar outro cadastro.</p>
+    <div class="inline-actions">
+      <a class="btn ghost" href="/cliente/vitrine">Voltar à vitrine</a>
+      <a class="btn ghost" href="/cliente/sair">Sair</a>
+    </div>
+  </div>
+  <div class="hero-card">
+    <strong>{{ account.name }}</strong>
+    <span>WhatsApp: {{ account.phone }}</span>
+    <small>{{ account.email or 'sem e-mail cadastrado' }}</small>
+  </div>
+</section>
+
+<section class="auth-card-wrap">
+  <article class="panel auth-card">
+    {% if error %}<div class="alert danger">{{ error }}</div>{% endif %}
+    {% if success %}<div class="alert success">{{ success }}</div>{% endif %}
+
+    <p class="eyebrow">Dados</p>
+    <h2>Atualizar cadastro</h2>
+    <form method="post" action="/cliente/perfil" class="stack-form">
+      <label>Nome
+        <input name="name" required value="{{ account.name }}">
+      </label>
+      <label>WhatsApp
+        <input name="phone" required inputmode="tel" value="{{ account.phone or '' }}">
+      </label>
+      <label>E-mail
+        <input name="email" type="email" value="{{ account.email or '' }}">
+      </label>
+      <label>Instagram
+        <input name="instagram" value="{{ account.instagram or '' }}" placeholder="@instagram">
+      </label>
+      <label>Estilo e peças preferidas
+        <textarea name="style_preferences" rows="3">{{ account.style_preferences or '' }}</textarea>
+      </label>
+      <button class="btn primary wide" type="submit">Salvar dados</button>
+    </form>
+  </article>
+
+  <article class="panel auth-card">
+    <p class="eyebrow">Senha</p>
+    <h2>Alterar senha</h2>
+    <form method="post" action="/cliente/alterar-senha" class="stack-form">
+      <label>Senha atual opcional
+        <input name="current_password" type="password" autocomplete="current-password" placeholder="Informe para conferir">
+      </label>
+      <label>Nova senha
+        <input name="password" type="password" required autocomplete="new-password" placeholder="Nova senha">
+      </label>
+      <label>Confirmar nova senha
+        <input name="password_confirm" type="password" autocomplete="new-password" placeholder="Repita a nova senha">
+      </label>
+      <button class="btn primary wide" type="submit">Alterar senha</button>
+    </form>
+  </article>
+</section>
+{% endblock %}

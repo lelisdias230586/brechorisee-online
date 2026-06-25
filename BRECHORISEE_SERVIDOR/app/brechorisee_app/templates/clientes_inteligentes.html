@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% block page_title %}Clientes inteligentes{% endblock %}
+{% block content %}
+<section class="panel customer-hero">
+  <div>
+    <p class="eyebrow">CRM inteligente</p>
+    <h2>Características, preferências e valor de cada cliente</h2>
+    <p class="hint">A análise usa o histórico real de vendas: peças compradas, valor gasto, estilos, cores, tamanhos, marcas e formas de pagamento.</p>
+  </div>
+  <form class="search-row compact-search" method="get" action="/clientes-inteligentes">
+    <input name="q" value="{{ q }}" placeholder="Buscar cliente, estilo, tamanho, cor, marca..." autocomplete="off">
+    <button class="btn primary" type="submit">Pesquisar</button>
+    <a class="btn ghost" href="/clientes-inteligentes">Limpar</a>
+  </form>
+</section>
+
+<section class="stats-grid customer-stats">
+  <article class="stat-card">
+    <span>Clientes com histórico</span>
+    <strong>{{ profiles|length }}</strong>
+    <small>com base nas vendas salvas</small>
+  </article>
+  <article class="stat-card">
+    <span>Top cliente</span>
+    <strong>{% if profiles %}{{ profiles[0].total_spent|money }}{% else %}R$ 0,00{% endif %}</strong>
+    <small>{% if profiles %}{{ profiles[0].name }}{% else %}sem vendas ainda{% endif %}</small>
+  </article>
+  <article class="stat-card">
+    <span>Estilo mais forte</span>
+    <strong>{% if charts.styles %}{{ charts.styles[0].label }}{% else %}-{% endif %}</strong>
+    <small>{% if charts.styles %}{{ charts.styles[0].count }} ocorrência(s){% else %}cadastre mais vendas{% endif %}</small>
+  </article>
+  <article class="stat-card">
+    <span>Pagamento preferido</span>
+    <strong>{% if charts.payments %}{{ charts.payments[0].label }}{% else %}-{% endif %}</strong>
+    <small>forma mais repetida</small>
+  </article>
+</section>
+
+<section class="customer-layout">
+  <aside class="panel customer-list">
+    <div class="section-head no-margin">
+      <div>
+        <p class="eyebrow">Ranking</p>
+        <h2>Quem compra mais</h2>
+      </div>
+    </div>
+    <div class="client-rank-list">
+      {% for p in profiles %}
+        <a class="client-rank-item {{ 'active' if selected and p.name == selected.name else '' }}" href="/clientes-inteligentes?cliente={{ p.name }}">
+          <div>
+            <strong>{{ p.name }}</strong>
+            <small>{{ p.sales_count }} compra(s) • {{ p.pieces_count }} peça(s)</small>
+            <span class="mini-bar"><i style="width: {{ p.bar_pct }}%"></i></span>
+          </div>
+          <b>{{ p.total_spent|money }}</b>
+        </a>
+      {% else %}
+        <div class="empty-state compact">
+          <h3>Sem clientes ainda.</h3>
+          <p>Quando houver vendas com nome de cliente, o perfil aparece aqui.</p>
+        </div>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <main class="customer-detail-area">
+    {% if selected %}
+    <section class="panel customer-profile">
+      <div class="detail-head">
+        <div>
+          <p class="eyebrow">Perfil automático</p>
+          <h2>{{ selected.name }}</h2>
+          <p class="hint">
+            {% if selected.phone %}{{ selected.phone }}{% endif %}
+            {% if selected.instagram %} • {{ selected.instagram }}{% endif %}
+            {% if selected.email %} • {{ selected.email }}{% endif %}
+          </p>
+        </div>
+        <div class="inline-actions">
+          {% if selected.phone %}
+            <a class="btn primary" target="_blank" href="https://wa.me/{{ selected.phone|replace(' ','')|replace('-','')|replace('(','')|replace(')','') }}?text=Oi%2C%20{{ selected.name }}%21%20Chegaram%20pe%C3%A7as%20que%20combinam%20com%20seu%20estilo%20no%20BRECHORISEE.">WhatsApp</a>
+          {% endif %}
+          <a class="btn ghost" href="/gestao#clientes">Editar cadastro</a>
+        </div>
+      </div>
+
+      <div class="stats-grid mini">
+        <article class="stat-card"><span>Total gasto</span><strong>{{ selected.total_spent|money }}</strong><small>histórico completo</small></article>
+        <article class="stat-card"><span>Compras</span><strong>{{ selected.sales_count }}</strong><small>vendas finalizadas</small></article>
+        <article class="stat-card"><span>Peças compradas</span><strong>{{ selected.pieces_count }}</strong><small>itens vendidos</small></article>
+        <article class="stat-card"><span>Ticket médio</span><strong>{{ selected.ticket_avg|money }}</strong><small>por compra</small></article>
+      </div>
+
+      <div class="profile-columns">
+        <article class="info-card">
+          <h3>Preferências detectadas</h3>
+          <div class="chip-block">
+            {% for group_name, group in [
+              ('Tipos', selected.top_types),
+              ('Tamanhos', selected.top_sizes),
+              ('Cores', selected.top_colors),
+              ('Marcas', selected.top_brands),
+              ('Estilos', selected.top_styles),
+              ('Pagamentos', selected.top_payments)
+            ] %}
+              <div>
+                <strong>{{ group_name }}</strong>
+                <p>
+                  {% for item in group %}
+                    <span class="chip">{{ item.label }} <small>{{ item.count }}</small></span>
+                  {% else %}
+                    <span class="hint">Sem dados</span>
+                  {% endfor %}
+                </p>
+              </div>
+            {% endfor %}
+          </div>
+        </article>
+
+        <article class="info-card">
+          <h3>Cadastro e observações</h3>
+          <div class="info-grid compact">
+            <span>Medidas</span><strong>{{ selected.measurements or '-' }}</strong>
+            <span>Preferências manuais</span><strong>{{ selected.preferences or '-' }}</strong>
+            <span>Observações</span><strong>{{ selected.notes or '-' }}</strong>
+            <span>Última compra</span><strong>{{ selected.last_sale|date_br }}</strong>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head no-margin">
+        <div>
+          <p class="eyebrow">Ofertas certeiras</p>
+          <h2>Peças disponíveis para oferecer</h2>
+          <p class="hint">Sugestões por tamanho, cor, marca, tipo e estilo que a cliente já comprou.</p>
+        </div>
+      </div>
+      <div class="product-grid compact-products">
+        {% for p in suggestions %}
+          {% include "partials/product_card.html" %}
+        {% else %}
+          <div class="empty-state compact">
+            <h3>Nenhuma sugestão automática.</h3>
+            <p>Cadastre mais peças disponíveis ou vendas com dados de estilo para melhorar a recomendação.</p>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head no-margin">
+        <div>
+          <p class="eyebrow">Histórico</p>
+          <h2>Peças compradas por {{ selected.name }}</h2>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Data</th><th>Código</th><th>Peça</th><th>Tipo</th><th>Tam.</th><th>Marca</th><th>Cor</th><th>Valor</th></tr>
+          </thead>
+          <tbody>
+            {% for item in selected.products[:60] %}
+              <tr>
+                <td>{{ item.date|date_br }}</td>
+                <td>{{ item.code or '-' }}</td>
+                <td>{{ item.title or '-' }}</td>
+                <td>{{ item.type or '-' }}</td>
+                <td>{{ item.size or '-' }}</td>
+                <td>{{ item.brand or '-' }}</td>
+                <td>{{ item.color or '-' }}</td>
+                <td>{{ item.price|money }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="8">Sem itens encontrados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% else %}
+      <section class="panel empty-state">
+        <h3>Nenhum perfil selecionado.</h3>
+        <p>Faça uma venda com nome da cliente para gerar o perfil automático.</p>
+      </section>
+    {% endif %}
+  </main>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Gráficos de clientes</p>
+      <h2>Preferências gerais</h2>
+    </div>
+  </div>
+  <div class="analytics-grid">
+    {% for title, rows in [
+      ('Estilos mais comprados', charts.styles),
+      ('Tipos de peça', charts.types),
+      ('Tamanhos', charts.sizes),
+      ('Cores', charts.colors),
+      ('Formas de pagamento preferidas', charts.payments)
+    ] %}
+      <article class="chart-card">
+        <h3>{{ title }}</h3>
+        {% set max_count = rows[0].count if rows else 0 %}
+        {% for row in rows %}
+          <div class="bar-row">
+            <span>{{ row.label }}</span>
+            <div><i style="width: {{ (row.count / max_count * 100)|round(0) if max_count else 0 }}%"></i></div>
+            <b>{{ row.count }}</b>
+          </div>
+        {% else %}
+          <p class="hint">Sem dados suficientes.</p>
+        {% endfor %}
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Reativação</p>
+      <h2>Clientes que podem receber mensagem</h2>
+      <p class="hint">Clientes sem compra há 45 dias ou mais.</p>
+    </div>
+  </div>
+  <div class="draft-grid">
+    {% for p in charts.inactive %}
+      <article class="draft-card">
+        <strong>{{ p.name }}</strong>
+        <small>{{ p.inactive_days }} dias sem compra • {{ p.total_spent|money }} gastos</small>
+        <p>
+          {% if p.top_types %}Gosta de {{ p.top_types[0].label }}{% endif %}
+          {% if p.top_colors %} • cor {{ p.top_colors[0].label }}{% endif %}
+          {% if p.top_sizes %} • tamanho {{ p.top_sizes[0].label }}{% endif %}
+        </p>
+        {% if p.phone %}
+          <a class="btn ghost" target="_blank" href="https://wa.me/{{ p.phone|replace(' ','')|replace('-','')|replace('(','')|replace(')','') }}?text=Oi%2C%20{{ p.name }}%21%20Temos%20novidades%20no%20BRECHORISEE%20que%20combinam%20com%20seu%20estilo.">Enviar WhatsApp</a>
+        {% endif %}
+      </article>
+    {% else %}
+      <div class="empty-state compact">
+        <h3>Nenhuma cliente inativa encontrada.</h3>
+        <p>Ótimo sinal: as clientes estão comprando recentemente ou ainda há poucos dados.</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

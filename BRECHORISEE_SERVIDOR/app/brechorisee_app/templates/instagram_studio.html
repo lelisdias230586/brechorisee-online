@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block page_title %}Instagram Studio Pro{% endblock %}
+{% block content %}
+<style>
+.ig-studio{display:grid;gap:16px}.ig-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(330px,.82fr);gap:16px}.ig-card{background:#fff;border:1px solid #eadfd8;border-radius:24px;padding:16px;box-shadow:0 18px 60px rgba(95,45,30,.08)}.ig-pills{display:flex;gap:8px;flex-wrap:wrap}.ig-pill{display:inline-flex;border-radius:999px;padding:7px 10px;background:#f5ebe5;color:#7c3f31;font-weight:800;font-size:.9rem}.ig-pill.live{background:#ffe1ed;color:#b7235a}.ig-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.ig-product{display:grid;grid-template-columns:74px minmax(0,1fr);gap:10px;align-items:center;padding:10px;border:1px solid #eadfd8;border-radius:18px;background:#fffaf7;text-decoration:none;color:inherit}.ig-product img{width:74px;height:86px;border-radius:14px;object-fit:contain;background:#fff;border:1px solid #f0dfd7}.ig-product strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ig-form{display:grid;gap:10px}.ig-form input,.ig-form textarea,.ig-form select{width:100%;border:1px solid #dec8bf;border-radius:14px;padding:11px 12px;font:inherit}.generated{display:grid;grid-template-columns:minmax(180px,300px) minmax(0,1fr);gap:14px;align-items:start}.generated img{width:100%;max-height:520px;object-fit:contain;border-radius:22px;background:#fffaf5;border:1px solid #eadfd8}.caption-box{white-space:pre-wrap;background:#fff8f4;border:1px dashed #d8ac9d;border-radius:18px;padding:12px}.recap-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.recap-item{background:#fffaf7;border:1px solid #eadfd8;border-radius:18px;padding:10px}.recap-item img{width:100%;height:210px;object-fit:contain;border-radius:14px;background:#fff}.recent{display:grid;gap:8px}.recent-row{display:flex;gap:10px;align-items:center;padding:9px;border-radius:16px;background:#fffaf7}.recent-row img{width:48px;height:58px;object-fit:contain;border-radius:10px;background:#fff}.code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#f4ebe6;border-radius:8px;padding:2px 6px}@media(max-width:980px){.ig-hero,.generated{grid-template-columns:1fr}.ig-grid,.recap-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.ig-grid,.recap-grid{grid-template-columns:1fr}.ig-card{border-radius:20px;padding:13px}}
+</style>
+
+<div class="ig-studio">
+  <section class="ig-hero">
+    <article class="ig-card">
+      <div class="ig-pills">
+        <span class="ig-pill live">Instagram + BRECHORISEE</span>
+        <span class="ig-pill">Live livre automática</span>
+        <span class="ig-pill">Stories • Posts • Reels</span>
+      </div>
+      <h2>Instagram Studio Pro</h2>
+      <p class="hint">O Instagram continua sendo o palco. O BRECHORISEE reconhece a peça, mostra miniatura no overlay do cliente, controla reserva/fila e gera conteúdo para Stories, Posts e Reels.</p>
+      {% if msg %}<p class="success">{{ msg }}</p>{% endif %}
+      <div class="inline-actions">
+        <a class="btn primary" href="/instagram" target="_blank">Abrir link da bio /instagram</a>
+        <a class="btn" href="/live/central">Central da Live</a>
+        <a class="btn ghost" href="/cliente/live-opcoes" target="_blank">Tela cliente</a>
+      </div>
+    </article>
+
+    <article class="ig-card">
+      <h3>Live Automática Inteligente</h3>
+      <p class="hint">Inicie a live sem escolher peças antes. O app Admin reconhece automaticamente as peças mostradas na tela/câmera. O app Cliente exibe miniatura flutuante por cima do Instagram.</p>
+      <form class="ig-form" method="post" action="/instagram-studio/live-automatica/iniciar">
+        <input name="title" placeholder="Título da live, ex.: Garimpo de hoje">
+        <input name="instagram_live_url" placeholder="Link do Instagram, se tiver">
+        <button class="btn primary" type="submit">Iniciar live automática</button>
+      </form>
+      {% if live_session %}
+      <div style="margin-top:12px" class="ig-pills">
+        <span class="ig-pill live">Status: {{ live_session.status }}</span>
+        <span class="ig-pill">Sessão #{{ live_session.id }}</span>
+        {% if live_session.instagram_live_url %}<span class="ig-pill">Instagram configurado</span>{% endif %}
+      </div>
+      {% endif %}
+    </article>
+  </section>
+
+  <section class="ig-card">
+    <div class="section-head no-margin">
+      <div>
+        <p class="eyebrow">Criar conteúdo</p>
+        <h2>Stories, Posts e Reels por peça</h2>
+        <p class="hint">Escolha uma peça e gere legenda, hashtags, roteiro e arte pronta para postar.</p>
+      </div>
+    </div>
+    <form class="search-row" method="get" action="/instagram-studio">
+      <input name="q" value="{{ q }}" placeholder="Buscar peça por código, nome, cor, tamanho...">
+      <button class="btn primary" type="submit">Buscar</button>
+      <a class="btn ghost" href="/instagram-studio">Limpar</a>
+    </form>
+    <div class="ig-grid" style="margin-top:14px">
+      {% for p in products %}
+      <a class="ig-product" href="/instagram-studio?product_id={{ p.id }}">
+        {% if p.image_filename %}<img src="/static/uploads/{{ p.image_filename }}" alt="{{ p.title }}">{% else %}<span></span>{% endif %}
+        <div>
+          <strong>{{ p.title }}</strong>
+          <small><span class="code">{{ p.code }}</span></small>
+          <small>{{ p.size or '-' }} • {{ p.status }}</small>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if selected_product %}
+  <section class="ig-card">
+    <h2>Gerar conteúdo para {{ selected_product.title }}</h2>
+    <form class="ig-form" method="post" action="/instagram-studio/gerar">
+      <input type="hidden" name="product_id" value="{{ selected_product.id }}">
+      <input type="hidden" name="q" value="{{ q }}">
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+        <select name="content_type">
+          <option value="story">Story 9:16</option>
+          <option value="post">Post quadrado/vertical</option>
+          <option value="carrossel">Carrossel</option>
+          <option value="reel">Reel / roteiro</option>
+        </select>
+        <select name="template_style">
+          <option value="live">Live</option>
+          <option value="repescagem">Repescagem</option>
+          <option value="minimalista">Minimalista</option>
+          <option value="premium">Premium</option>
+        </select>
+        <button class="btn primary" type="submit">Gerar arte + legenda</button>
+      </div>
+      <textarea name="custom_text" rows="3" placeholder="Texto opcional, ex.: sobrou da live, peça única, garimpo especial..."></textarea>
+    </form>
+  </section>
+  {% endif %}
+
+  {% if generated %}
+  <section class="ig-card generated">
+    <div>
+      {% if generated.rendered_url %}<img src="{{ generated.rendered_url }}" alt="Arte gerada">{% endif %}
+      <div class="inline-actions" style="margin-top:10px">
+        {% if generated.rendered_url %}<a class="btn primary" href="{{ generated.rendered_url }}" download>Baixar arte</a>{% endif %}
+        <a class="btn" href="{{ generated.share_url }}" target="_blank">Link da peça</a>
+      </div>
+    </div>
+    <div>
+      <p class="eyebrow">{{ generated.format_label }}</p>
+      <h2>{{ generated.title }}</h2>
+      <h3>Legenda</h3>
+      <div class="caption-box">{{ generated.full_caption or generated.caption }}</div>
+      <h3>Hashtags</h3>
+      <div class="caption-box">{{ generated.hashtags }}</div>
+      {% if generated.reel_script %}
+      <h3>Roteiro Reels</h3>
+      <div class="caption-box">{{ generated.reel_script|join('\n') }}</div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="ig-card">
+    <div class="section-head no-margin">
+      <div>
+        <p class="eyebrow">Depois da live</p>
+        <h2>Repescagem automática para Stories/Posts</h2>
+        <p class="hint">Gera artes das peças mostradas na live que continuam disponíveis.</p>
+      </div>
+      <form method="post" action="/instagram-studio/repescagem" class="inline-actions">
+        {% if live_session %}<input type="hidden" name="session_id" value="{{ live_session.id }}">{% endif %}
+        <select name="content_type" style="padding:10px;border-radius:12px;border:1px solid #dec8bf">
+          <option value="story">Stories</option>
+          <option value="post">Posts</option>
+        </select>
+        <button class="btn primary" type="submit">Gerar repescagem</button>
+      </form>
+    </div>
+    {% if generated_collection %}
+    <div class="recap-grid">
+      {% for g in generated_collection %}
+      <div class="recap-item">
+        {% if g.rendered_url %}<img src="{{ g.rendered_url }}" alt="{{ g.title }}">{% endif %}
+        <strong>{{ g.title }}</strong>
+        <p class="hint">{{ g.product.code }} • {{ g.product.size or '-' }}</p>
+        <a class="btn primary" href="{{ g.rendered_url }}" download>Baixar</a>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="ig-card">
+    <h2>Últimas peças reconhecidas/mostradas</h2>
+    <div class="recent">
+      {% for item in recent_items %}
+      <div class="recent-row">
+        {% if item.image_filename %}<img src="/static/uploads/{{ item.image_filename }}" alt="{{ item.title }}">{% endif %}
+        <div>
+          <strong>{{ item.title }}</strong><br>
+          <small><span class="code">{{ item.code }}</span> • {{ item.action }} • {{ item.status }}</small>
+        </div>
+      </div>
+      {% else %}
+      <p class="hint">A live automática ainda não registrou peças.</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

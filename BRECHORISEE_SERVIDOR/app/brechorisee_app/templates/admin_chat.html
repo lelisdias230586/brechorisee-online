@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block page_title %}Chat BRECHORISEE{% endblock %}
+{% block content %}
+<section class="admin-chat-page" data-thread-id="{{ selected_thread.id if selected_thread else '' }}">
+  <div class="page-actions">
+    <form class="filters" method="get" action="/atendimento">
+      <input type="search" name="q" value="{{ q }}" placeholder="Buscar cliente, peça, pedido...">
+      <select name="status">
+        {% for s in ['aberto','pendente','resolvido','arquivado','todos'] %}
+          <option value="{{ s }}" {{ 'selected' if status == s else '' }}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn" type="submit">Filtrar</button>
+    </form>
+  </div>
+
+  <div class="chat-risee-layout admin">
+    <aside class="chat-risee-list">
+      <div class="chat-risee-list-head"><strong>Atendimentos</strong><span>{{ threads|length }}</span></div>
+      {% for t in threads %}
+        <a class="chat-thread-link {{ 'active' if selected_thread and t.id == selected_thread.id else '' }}" href="/atendimento/{{ t.id }}">
+          <span class="chat-thread-title">{{ t.customer_name or 'Cliente' }}</span>
+          <small>{{ t.title }} • {{ t.status }}</small>
+          {% if t.unread_admin %}<b>{{ t.unread_admin }}</b>{% endif %}
+        </a>
+      {% else %}
+        <p class="muted">Nenhuma conversa encontrada.</p>
+      {% endfor %}
+    </aside>
+
+    <section class="chat-risee-panel">
+      {% if selected_thread %}
+        <header class="chat-risee-context">
+          <div>
+            <small>Conversa #{{ selected_thread.id }} • {{ selected_thread.origin }} • {{ selected_thread.status }}</small>
+            <h2>{{ selected_thread.title }}</h2>
+            <p class="chat-bot-status {{ 'paused' if selected_thread.bot_paused else 'auto' }}">
+              Bot BRECHORISEE:
+              {% if selected_thread.bot_paused %}
+                pausado para atendimento humano{% if selected_thread.assigned_admin_name %} por {{ selected_thread.assigned_admin_name }}{% endif %}
+              {% else %}
+                automático acompanhando
+              {% endif %}
+            </p>
+            {% if selected_customer %}
+              <p>{{ selected_customer.name }} • {{ selected_customer.phone }} {% if selected_customer.instagram %}• {{ selected_customer.instagram }}{% endif %}</p>
+            {% endif %}
+            {% if selected_product %}
+              <p>Peça: {{ selected_product.code }} — {{ selected_product.title }} • {{ selected_product.sale_price|money }} • {{ selected_product.status }}</p>
+            {% endif %}
+            {% if selected_order %}
+              <p>Pedido: {{ selected_order.order_code }} • {{ selected_order.status }} • {{ selected_order.total|money }}</p>
+            {% endif %}
+          </div>
+          {% if selected_product and selected_product.image_filename %}
+            <img class="chat-context-image" src="{{ url_for('static', path='/uploads/' ~ selected_product.image_filename) }}" alt="{{ selected_product.title }}">
+          {% endif %}
+        </header>
+
+        <div class="chat-admin-toolbar">
+          <form class="inline-status" data-status-form>
+            <select name="status">
+              {% for s in ['aberto','pendente','resolvido','arquivado'] %}
+                <option value="{{ s }}" {{ 'selected' if selected_thread.status == s else '' }}>{{ s }}</option>
+              {% endfor %}
+            </select>
+            <button class="btn tiny" type="submit">Atualizar</button>
+          </form>
+          <form class="inline-status bot-handoff" data-bot-mode-form>
+            {% if selected_thread.bot_paused %}
+              <input type="hidden" name="mode" value="auto">
+              <button class="btn tiny primary" type="submit">Devolver para o Bot BRECHORISEE</button>
+            {% else %}
+              <input type="hidden" name="mode" value="humano">
+              <button class="btn tiny warning" type="submit">Assumir atendimento</button>
+            {% endif %}
+          </form>
+          <div class="quick-replies brecho-admin-quick-replies">
+            {% for r in quick_replies %}
+              <button type="button" data-reply="{{ r.body|e }}">{{ r.label }}</button>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div id="chatMessages" class="chat-risee-messages" data-last-id="{{ messages[-1].id if messages else 0 }}">
+          {% for m in messages %}
+            <article class="chat-message {{ m.sender_type }}">
+              <div class="chat-bubble">
+                <strong>{{ m.sender_name or m.sender_type }}</strong>
+                {% if m.body %}<p>{{ m.body|replace('\n','<br>')|safe }}</p>{% endif %}
+                {% if m.attachment_url %}
+                  {% if m.message_type == 'image' %}
+                    <a href="{{ m.attachment_url }}" target="_blank" rel="noopener"><img src="{{ m.attachment_url }}" alt="Anexo"></a>
+                  {% else %}
+                    <a href="{{ m.attachment_url }}" target="_blank" rel="noopener">Abrir anexo</a>
+                  {% endif %}
+                {% endif %}
+                <small>{{ m.created_at }}</small>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+
+        <form id="chatForm" class="chat-risee-compose" enctype="multipart/form-data">
+          <textarea name="body" rows="2" placeholder="Responda de forma humana. Ex.: Sim, consigo reservar e confirmar pagamento/retirada para você."></textarea>
+          <label class="chat-file-btn">📎
+            <input type="file" name="attachment" accept="image/*,.pdf,.txt">
+          </label>
+          <button class="btn primary" type="submit">Enviar</button>
+        </form>
+      {% else %}
+        <div class="chat-risee-empty"><h2>Selecione uma conversa</h2></div>
+      {% endif %}
+    </section>
+  </div>
+</section>
+
+<script>
+(() => {
+  const page = document.querySelector('.admin-chat-page');
+  if (!page) return;
+  const threadId = page.dataset.threadId;
+  const messages = document.getElementById('chatMessages');
+  const form = document.getElementById('chatForm');
+  const textArea = form ? form.querySelector('textarea[name="body"]') : null;
+  function scrollBottom(){ if(messages){ messages.scrollTop = messages.scrollHeight; } }
+  function escapeHtml(s){ return (s || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+  function renderMessage(m){
+    const article = document.createElement('article');
+    article.className = 'chat-message ' + (m.sender_type || '');
+    let attachment = '';
+    if (m.attachment_url) {
+      if (m.message_type === 'image') attachment = `<a href="${m.attachment_url}" target="_blank" rel="noopener"><img src="${m.attachment_url}" alt="Anexo"></a>`;
+      else attachment = `<a href="${m.attachment_url}" target="_blank" rel="noopener">Abrir anexo</a>`;
+    }
+    article.innerHTML = `<div class="chat-bubble"><strong>${escapeHtml(m.sender_name || m.sender_type)}</strong>${m.body ? `<p>${escapeHtml(m.body).replace(/\n/g,'<br>')}</p>` : ''}${attachment}<small>${escapeHtml(m.created_at || '')}</small></div>`;
+    messages.appendChild(article);
+    messages.dataset.lastId = String(Math.max(Number(messages.dataset.lastId || 0), Number(m.id || 0)));
+  }
+  async function poll(){
+    if (!threadId || !messages) return;
+    const after = messages.dataset.lastId || 0;
+    try {
+      const res = await fetch(`/api/chat/admin/${threadId}/messages?after_id=${after}`, {headers:{'Accept':'application/json'}});
+      const data = await res.json();
+      if (data.ok && data.messages && data.messages.length) {
+        data.messages.forEach(renderMessage);
+        scrollBottom();
+      }
+    } catch(e) {}
+  }
+  if (form && threadId) {
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const fd = new FormData(form);
+      try {
+        const res = await fetch(`/api/chat/admin/${threadId}/messages`, {method:'POST', body:fd});
+        const data = await res.json();
+        if (data.ok) {
+          form.reset();
+          renderMessage(data.message);
+          scrollBottom();
+        } else {
+          alert(data.message || 'Não foi possível enviar.');
+        }
+      } catch(e) { alert('Falha de conexão.'); }
+    });
+    scrollBottom();
+    setInterval(poll, 2500);
+  }
+  document.querySelectorAll('[data-reply]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!textArea) return;
+      textArea.value = btn.dataset.reply || '';
+      textArea.focus();
+    });
+  });
+  const statusForm = document.querySelector('[data-status-form]');
+  if (statusForm && threadId) {
+    statusForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const fd = new FormData(statusForm);
+      const res = await fetch(`/api/chat/admin/${threadId}/status`, {method:'POST', body:fd});
+      const data = await res.json();
+      if (!data.ok) alert(data.message || 'Não foi possível atualizar.');
+      else location.reload();
+    });
+  }
+  const botModeForm = document.querySelector('[data-bot-mode-form]');
+  if (botModeForm && threadId) {
+    botModeForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const fd = new FormData(botModeForm);
+      const res = await fetch(`/api/chat/admin/${threadId}/bot-mode`, {method:'POST', body:fd});
+      const data = await res.json();
+      if (!data.ok) alert(data.message || 'Não foi possível alterar o modo do bot.');
+      else location.reload();
+    });
+  }
+})();
+</script>
+{% endblock %}

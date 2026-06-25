@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block page_title %}Pedido WhatsApp #{{ order.id }}{% endblock %}
+{% block content %}
+<section class="detail-layout">
+  <article class="panel detail-info">
+    <div class="detail-head">
+      <div>
+        <p class="eyebrow">Pedido WhatsApp</p>
+        <h2>#{{ order.id }} • {{ order.customer_name or 'Cliente' }}</h2>
+      </div>
+      <span class="delivery-status status-{{ order.status }}">{{ order.status|whatsapp_order_label }}</span>
+    </div>
+
+    <div class="info-grid">
+      <span>WhatsApp</span><strong>{{ order.phone or '-' }}</strong>
+      <span>Total</span><strong>{{ order.total|money }}</strong>
+      <span>Pagamento</span><strong>{{ order.payment_method or '-' }}</strong>
+      <span>Status</span><strong>{{ order.status|whatsapp_order_label }}</strong>
+      <span>Reserva até</span><strong>{{ order.reservation_expires_at|date_br }}</strong>
+      <span>Tipo</span><strong>{{ 'Entrega' if order.delivery_type == 'entrega' else 'Retirada' }}</strong>
+    </div>
+
+    <div class="inline-actions wrap-between">
+      <a class="btn primary" href="{{ whatsapp_url }}" target="_blank">Enviar pelo WhatsApp</a>
+      {% if order.payment_link %}
+        <a class="btn" href="{{ order.payment_link }}" target="_blank">Abrir link InfinitePay/cartão</a>
+      {% endif %}
+      {% if maps_url %}
+        <a class="btn ghost" href="{{ maps_url }}" target="_blank">Abrir localização</a>
+      {% endif %}
+    </div>
+
+    <div class="text-block">
+      <h3>Mensagem pronta</h3>
+      <textarea class="copy-box" id="whatsappMessageBox" rows="16">{{ message }}</textarea>
+      <button class="btn" type="button" data-copy-target="whatsappMessageBox">Copiar mensagem</button>
+    </div>
+
+    <div class="text-block">
+      <h3>Status do pedido</h3>
+      <form method="post" action="/whatsapp-vendas/{{ order.id }}/status" class="inline-actions">
+        <select name="status">
+          {% for key, label in statuses.items() %}
+            <option value="{{ key }}" {{ 'selected' if order.status == key else '' }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn" type="submit">Atualizar</button>
+      </form>
+    </div>
+
+    <div class="inline-actions">
+      {% if not order.sale_id %}
+      <form method="post" action="/whatsapp-vendas/{{ order.id }}/confirm-payment" onsubmit="return confirm('Confirmar pagamento e baixar todas as peças do estoque?')">
+        <button class="btn primary" type="submit">Pagamento confirmado • salvar venda</button>
+      </form>
+      <form method="post" action="/whatsapp-vendas/{{ order.id }}/cancel" onsubmit="return confirm('Cancelar pedido e devolver peças reservadas ao estoque?')">
+        <button class="btn ghost" type="submit">Cancelar pedido</button>
+      </form>
+      {% else %}
+        <a class="btn primary" href="/sales/{{ order.sale_id }}">Abrir venda gerada</a>
+      {% endif %}
+    </div>
+  </article>
+
+  <article class="panel qr-card">
+    <p class="eyebrow">Pagamento</p>
+    <h3>{{ order.payment_method or 'Pagamento' }}</h3>
+    {% if order.pix_copy_paste %}
+      <p class="hint">Pix copia e cola cadastrado.</p>
+      <textarea class="copy-box" id="pixBox" rows="5">{{ order.pix_copy_paste }}</textarea>
+      <button class="btn" type="button" data-copy-target="pixBox">Copiar Pix</button>
+    {% elif order.pix_key %}
+      <p class="hint">Chave Pix:</p>
+      <strong>{{ order.pix_key }}</strong>
+    {% endif %}
+    {% if order.payment_link %}
+      <a class="btn primary wide" href="{{ order.payment_link }}" target="_blank">Link InfinitePay/cartão</a>
+    {% endif %}
+  </article>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Peças do pedido</p>
+      <h2>Fotos e itens enviados</h2>
+      <p class="hint">A mensagem pronta inclui links das fotos. No celular, você também pode abrir e compartilhar cada foto manualmente.</p>
+    </div>
+  </div>
+  <div class="product-grid">
+    {% for item in items %}
+      <article class="product-card">
+        <a href="/products/{{ item.product_id }}" class="product-photo">
+          {% if item.image_filename %}
+            <img src="{{ url_for('static', path='/uploads/' ~ item.image_filename) }}" alt="{{ item.title }}">
+          {% else %}
+            <span>sem foto</span>
+          {% endif %}
+          <em class="status {{ item.product_status }}">{{ item.product_status }}</em>
+        </a>
+        <div class="product-body">
+          <div>
+            <strong>{{ item.code }} • {{ item.title }}</strong>
+            <small>{{ item.garment_type or 'Peça' }} • {{ item.size or 'tam. único' }} • {{ item.color or '-' }}</small>
+          </div>
+          <div class="product-meta">
+            <span>{{ item.brand or '-' }}</span>
+            <b>{{ item.price|money }}</b>
+          </div>
+          {% if item.image_filename %}
+          <div class="inline-actions" style="padding:0 0 8px;">
+            <a class="btn ghost" href="{{ url_for('static', path='/uploads/' ~ item.image_filename) }}" target="_blank">Abrir foto</a>
+            <button class="btn ghost share-image-btn" type="button" data-share-url="{{ url_for('static', path='/uploads/' ~ item.image_filename) }}" data-title="{{ item.code }} {{ item.title }}">Compartilhar foto</button>
+          </div>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-copy-target]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const target = document.getElementById(btn.dataset.copyTarget);
+      if (!target) return;
+      target.select();
+      target.setSelectionRange(0, target.value.length);
+      try {
+        await navigator.clipboard.writeText(target.value);
+        const old = btn.textContent;
+        btn.textContent = 'Copiado!';
+        setTimeout(() => btn.textContent = old, 1400);
+      } catch (e) {
+        document.execCommand('copy');
+      }
+    });
+  });
+
+  document.querySelectorAll('.share-image-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const url = new URL(btn.dataset.shareUrl, window.location.href).href;
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: btn.dataset.title || 'BRECHORISEE', text: 'Foto da peça BRECHORISEE', url });
+          return;
+        } catch (e) {}
+      }
+      await navigator.clipboard.writeText(url);
+      btn.textContent = 'Link copiado!';
+    });
+  });
+});
+</script>
+{% endblock %}

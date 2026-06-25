@@ -1,0 +1,26 @@
+<article class="product-card">
+  <a href="/products/{{ p.id }}" class="product-photo">
+    {% if p.image_filename %}
+      <img src="{{ url_for('static', path='/uploads/' ~ p.image_filename) }}" alt="{{ p.title }}">
+    {% else %}
+      <span>sem foto</span>
+    {% endif %}
+    <em class="status {{ p.status }}">{{ p.status }}</em>
+    {% if p.media_count and p.media_count > 1 %}<span class="media-badge">📎 {{ p.media_count }}</span>{% endif %}
+  </a>
+  <div class="product-body">
+    <div>
+      <strong>{{ p.title }}</strong>
+      {% set title_norm = (p.title or '')|lower %}
+      {% set garment_norm = (p.garment_type or '')|lower %}
+      <small>{% if garment_norm and garment_norm != title_norm %}{{ p.garment_type }}{% else %}{{ p.category or 'Peça' }}{% endif %} • {{ p.size or 'tam. único' }}</small>
+    </div>
+    <div class="product-meta">
+      <span>{{ p.code }}</span>
+      <b>{{ p.sale_price|money }}</b>
+    </div>
+    <div class="inline-actions" style="padding:0 15px 15px;">
+      <a class="btn ghost" href="/marketing?product_id={{ p.id }}">Insta</a>
+    </div>
+  </div>
+</article>

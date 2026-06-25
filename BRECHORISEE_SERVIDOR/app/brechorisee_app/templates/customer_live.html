@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#050505">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>BRECHORISEE • Live</title>
+  <link rel="manifest" href="{{ url_for('static', path='/manifest_cliente.webmanifest') }}">
+</head>
+<body>
+
+<style>
+html,body{margin:0!important;padding:0!important;width:100%;height:100%;overflow:hidden;background:#050505;color:#fff}
+.live-mobile-shell{position:fixed;inset:0;min-height:100dvh;width:100vw;background:#050505;color:#fff;margin:0;z-index:9999;overflow:hidden}
+.live-fullscreen{position:absolute;inset:0;width:100vw;height:100dvh;min-height:100dvh;background:#000;overflow:hidden}
+.live-fullscreen img#liveStageImage{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#1a1a1a}
+.live-darkfade-top{position:absolute;inset:0 auto auto 0;width:100%;height:160px;background:linear-gradient(to bottom,rgba(0,0,0,.58),rgba(0,0,0,0));pointer-events:none}
+.live-darkfade-bottom{position:absolute;inset:auto 0 0 0;width:100%;height:360px;background:linear-gradient(to top,rgba(0,0,0,.86),rgba(0,0,0,.34),rgba(0,0,0,0));pointer-events:none}
+.live-top-overlay{position:absolute;top:max(14px, env(safe-area-inset-top));left:14px;right:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;z-index:4}
+.live-host{display:flex;align-items:center;gap:10px;min-width:0}.live-host img{width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,255,255,.8);background:#fff}.live-host-name{font-weight:700;font-size:1.15rem;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}.live-top-actions{display:flex;align-items:center;gap:8px}.live-badge{background:#ff1c74;color:#fff;border-radius:10px;padding:10px 14px;font-weight:800;letter-spacing:.03em}.viewer-badge{background:rgba(97,97,97,.78);color:#fff;border-radius:10px;padding:10px 14px;font-weight:700;display:flex;align-items:center;gap:8px}.icon-btn-live{width:44px;height:44px;border:none;border-radius:12px;background:rgba(70,70,70,.72);color:#fff;font-size:1.35rem;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.live-recognition-pill{position:absolute;top:calc(max(14px, env(safe-area-inset-top)) + 92px);left:14px;z-index:4;display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;background:rgba(20,20,20,.62);backdrop-filter:blur(8px);color:#fff;font-weight:700}.live-recognition-pill::after{content:'';position:absolute;right:10px;top:-5px;width:9px;height:9px;border-radius:50%;background:#ff1c74}
+.live-comments-stack{position:absolute;left:14px;right:300px;bottom:108px;z-index:4;display:flex;flex-direction:column;gap:10px;max-height:42vh;overflow:hidden;pointer-events:none}.live-comment{display:flex;align-items:flex-start;gap:10px;max-width:100%}.live-comment-avatar{width:42px;height:42px;border-radius:50%;background:#ddd;flex:0 0 42px;overflow:hidden}.live-comment-avatar img{position:static;width:100%;height:100%;object-fit:cover}.live-comment-body{min-width:0;text-shadow:0 1px 2px rgba(0,0,0,.45)}.live-comment-author{font-weight:700;font-size:1.02rem;line-height:1.15}.live-comment-text{font-size:1.02rem;line-height:1.25;opacity:.98;word-break:break-word}.live-comment-reaction{font-size:1.5rem;line-height:1}
+.live-reference-stack{position:absolute;right:14px;bottom:112px;width:min(280px,42vw);z-index:4;display:flex;flex-direction:column;gap:12px;align-items:stretch}.live-reference-card{display:grid;grid-template-columns:76px 1fr 18px;gap:12px;align-items:center;padding:10px;border-radius:20px;background:rgba(24,24,24,.72);backdrop-filter:blur(14px);box-shadow:0 10px 30px rgba(0,0,0,.28);color:#fff;text-decoration:none}.live-reference-card img{position:static;width:76px;height:76px;border-radius:14px;object-fit:cover;background:#efe7df}.live-reference-card strong{display:block;font-size:1rem;line-height:1.15}.live-reference-card small{display:block;font-size:.92rem;opacity:.92;margin-top:5px}.live-reference-card .chev{font-size:1.6rem;opacity:.9}.live-reference-card .clip-mini-badge{display:inline-block;margin-top:5px;padding:3px 7px;border-radius:999px;background:rgba(255,255,255,.16);font-size:.72rem;font-weight:700}.live-reference-card.sold-out{animation:soldFade .9s ease forwards}.live-reference-empty{display:none;color:#fff;background:rgba(24,24,24,.52);border-radius:18px;padding:12px;font-size:.86rem}@keyframes soldFade{0%{transform:scale(1);opacity:1}45%{transform:scale(.98);opacity:1}100%{transform:translateX(30px);opacity:0}}
+.live-input-bar{position:fixed;left:0;right:0;bottom:max(10px, env(safe-area-inset-bottom));z-index:6;padding:0 14px;display:flex;align-items:center;gap:10px}.live-input-pill{flex:1;display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid rgba(255,255,255,.5);border-radius:999px;background:rgba(0,0,0,.28);backdrop-filter:blur(6px)}.live-input-pill input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:1rem}.live-input-pill input::placeholder{color:rgba(255,255,255,.8)}.live-input-pill button{border:none;background:transparent;color:#fff;font-weight:700}.live-bottom-icons{display:flex;align-items:center;gap:12px}.live-bottom-icons button,.live-bottom-icons a{width:42px;height:42px;border:none;background:transparent;color:#fff;font-size:1.8rem;display:flex;align-items:center;justify-content:center;text-decoration:none}.live-floating-hearts{position:absolute;right:22px;bottom:168px;z-index:5;pointer-events:none}.live-empty-state{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;background:rgba(0,0,0,.35);z-index:3}
+.live-search-sheet{position:fixed;inset:0;z-index:20;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.58)}.live-search-sheet.open{display:flex}.live-search-panel{width:min(680px,100%);max-height:82vh;overflow:auto;background:#fff;color:#2a1f1d;border-radius:28px 28px 0 0;padding:18px;box-shadow:0 -24px 60px rgba(0,0,0,.38)}.live-search-panel h3{margin:0 0 6px;font-size:1.35rem}.live-search-panel p{margin:0 0 14px;color:#766963}.live-search-form{display:grid;gap:10px}.live-search-form input[type="text"],.live-search-form input[type="file"]{width:100%;border:1px solid #e6d8d0;border-radius:18px;padding:13px;background:#fbf7f4}.live-search-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.live-search-results{display:grid;gap:10px;margin-top:14px}.live-search-result{display:grid;grid-template-columns:72px 1fr;gap:12px;padding:10px;border:1px solid #eadbd3;border-radius:20px;background:#fffaf7}.live-search-result img{position:static;width:72px;height:72px;border-radius:16px;object-fit:cover;background:#f3ece6}.live-search-result strong{display:block}.live-search-result small{display:block;color:#766963;margin-top:3px}.live-search-result .result-buttons{grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap}.live-search-close{border:none;background:#f4ebe6;color:#714231;border-radius:14px;padding:10px 14px;font-weight:700}.live-search-message{margin-top:10px;color:#714231;font-weight:700}.btn-mini{border:none;border-radius:14px;padding:10px 12px;font-weight:700}.btn-mini.primary{background:#a84d3a;color:#fff}.btn-mini.ghost{background:#f4ebe6;color:#714231}
+@media(max-width:720px){.live-comments-stack{right:108px}.live-reference-stack{width:96px}.live-reference-card{grid-template-columns:1fr;padding:8px;gap:6px}.live-reference-card img{width:80px;height:80px}.live-reference-card strong{font-size:.82rem}.live-reference-card small{font-size:.74rem}.live-reference-card .chev{display:none}.live-reference-card:nth-child(n+3){display:none}}
+@media(min-width:900px){.live-fullscreen{max-width:430px;margin:0 auto;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 30px 70px rgba(0,0,0,.4)}.live-reference-stack{width:220px}.live-comments-stack{right:250px}}
+</style>
+<div class="live-mobile-shell">
+  <section class="live-fullscreen" id="liveScreen">
+    <img id="liveStageImage" src="{{ live_info.snapshot_url if live_info and live_info.snapshot_url else '' }}" alt="Transmissão ao vivo">
+    <div class="live-darkfade-top"></div>
+    <div class="live-darkfade-bottom"></div>
+
+    <div class="live-top-overlay">
+      <div class="live-host">
+        <img src="{{ url_for('static', path='/img/logo-brechorisee-tight.png') }}" alt="BRECHORISEE">
+        <div>
+          <div class="live-host-name">brechorisee</div>
+          <div style="font-size:.92rem;opacity:.9;">{{ account.name }}</div>
+        </div>
+      </div>
+      <div class="live-top-actions">
+        <div class="live-badge" id="liveStatusPill">{% if live_info and live_info.status == 'ao_vivo' %}AO VIVO{% else %}AGUARDANDO{% endif %}</div>
+        {% if live_info and live_info.source_platform == 'instagram' and live_info.instagram_live_url %}
+        <a class="viewer-badge" href="{{ live_info.instagram_live_url }}" target="_blank" style="text-decoration:none;">Instagram</a>
+        {% endif %}
+        <div class="viewer-badge" id="viewerBadge">👁 <span id="viewerCount">{{ live_info.viewer_count if live_info and live_info.viewer_count is defined else 0 }}</span></div>
+        <a class="icon-btn-live" href="/cliente/live-opcoes" aria-label="Fechar live">✕</a>
+      </div>
+    </div>
+
+    <div class="live-recognition-pill" id="recognitionPill">✦ Peças ao vivo</div>
+    <div class="live-comments-stack" id="customerChatBox"></div>
+    <div class="live-floating-hearts" id="floatingHearts"></div>
+
+    <div class="live-reference-stack" id="referenceStack">
+      {% if live_info and live_info.reference_products %}
+        {% for p in live_info.reference_products %}
+        <a class="live-reference-card" href="{{ p.public_url }}" data-product-id="{{ p.id }}">
+          {% if p.image_url %}<img src="{{ p.image_url }}" alt="{{ p.title }}">{% else %}<img src="{{ url_for('static', path='/img/logo-brechorisee-tight.png') }}" alt="{{ p.title }}">{% endif %}
+          <span><strong>{{ p.title }}</strong><small>{{ p.price_label }}</small></span>
+          <span class="chev">›</span>
+        </a>
+        {% endfor %}
+      {% elif live_info and live_info.current_product %}
+        <a class="live-reference-card" href="{{ live_info.current_product.public_url }}" data-product-id="{{ live_info.current_product.id }}">
+          {% if live_info.current_product.image_url %}<img src="{{ live_info.current_product.image_url }}" alt="{{ live_info.current_product.title }}">{% else %}<img src="{{ url_for('static', path='/img/logo-brechorisee-tight.png') }}" alt="{{ live_info.current_product.title }}">{% endif %}
+          <span><strong>{{ live_info.current_product.title }}</strong><small>{{ live_info.current_product.price_label }}</small></span>
+          <span class="chev">›</span>
+        </a>
+      {% endif %}
+      <div class="live-reference-empty" id="referenceEmpty">Aguardando peças reconhecidas...</div>
+    </div>
+
+    <form class="live-input-bar" id="customerCommentForm" onsubmit="return false;">
+      <div class="live-input-pill">
+        <input id="customerCommentInput" placeholder="Adicione um comentário...">
+        <button type="submit">Enviar</button>
+      </div>
+      <div class="live-bottom-icons">
+        <button type="button" id="openReferenceSearchBtn" aria-label="Buscar por código ou print">🔎</button>
+        <button type="button" class="reaction-launch" data-emoji="❤️" aria-label="Curtir">♡</button>
+        <button type="button" class="reaction-launch" data-emoji="🔥" aria-label="Amei">✦</button>
+        <a href="/cliente/vitrine" aria-label="Voltar">⌂</a>
+      </div>
+    </form>
+
+    <div class="live-empty-state" id="liveEmptyState" {% if live_info and live_info.status == 'ao_vivo' %}style="display:none"{% endif %}>A live ainda não está ao vivo.</div>
+
+    <div class="live-search-sheet" id="referenceSearchSheet" aria-label="Buscar referência da live">
+      <div class="live-search-panel">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+          <div>
+            <h3>Buscar referência</h3>
+            <p>Digite o código da peça ou envie um print que você fez durante a live/repescagem. Depois selecione ou descarte.</p>
+          </div>
+          <button class="live-search-close" type="button" id="closeReferenceSearchBtn">Fechar</button>
+        </div>
+        <form class="live-search-form" id="referenceSearchForm">
+          <input type="text" id="referenceSearchCode" name="q" placeholder="Código, nome ou detalhe da peça">
+          <input type="file" id="referenceSearchImage" name="image" accept="image/*">
+          <div class="live-search-actions">
+            <button class="btn-mini primary" type="submit">Procurar</button>
+            <button class="btn-mini ghost" type="button" id="clearReferenceSearchBtn">Limpar</button>
+          </div>
+        </form>
+        <div class="live-search-message" id="referenceSearchMessage"></div>
+        <div class="live-search-results" id="referenceSearchResults"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="{{ url_for('static', path='/js/online-store.js') }}"></script>
+<script src="{{ url_for('static', path='/js/customer-live-notifications.js') }}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const stage = document.getElementById('liveStageImage');
+  const statusPill = document.getElementById('liveStatusPill');
+  const viewerCount = document.getElementById('viewerCount');
+  const referenceStack = document.getElementById('referenceStack');
+  const referenceEmpty = document.getElementById('referenceEmpty');
+  const chatBox = document.getElementById('customerChatBox');
+  const heartsBox = document.getElementById('floatingHearts');
+  const commentForm = document.getElementById('customerCommentForm');
+  const commentInput = document.getElementById('customerCommentInput');
+  const emptyState = document.getElementById('liveEmptyState');
+  const openReferenceSearchBtn = document.getElementById('openReferenceSearchBtn');
+  const referenceSearchSheet = document.getElementById('referenceSearchSheet');
+  const closeReferenceSearchBtn = document.getElementById('closeReferenceSearchBtn');
+  const referenceSearchForm = document.getElementById('referenceSearchForm');
+  const referenceSearchCode = document.getElementById('referenceSearchCode');
+  const referenceSearchImage = document.getElementById('referenceSearchImage');
+  const clearReferenceSearchBtn = document.getElementById('clearReferenceSearchBtn');
+  const referenceSearchMessage = document.getElementById('referenceSearchMessage');
+  const referenceSearchResults = document.getElementById('referenceSearchResults');
+  let liveSessionId = {{ live_info.id if live_info else 'null' }};
+  let lastSnapshotUrl = '';
+  let refreshLiveBusy = false;
+
+  const makeHeart = (emoji='❤️') => {
+    const el = document.createElement('div');
+    el.textContent = emoji;
+    el.style.position = 'absolute';
+    el.style.right = `${Math.random()*10}px`;
+    el.style.bottom = '0px';
+    el.style.fontSize = `${1.4 + Math.random()*1.0}rem`;
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+    el.style.transition = 'transform 2.4s ease-out, opacity 2.4s ease-out';
+    heartsBox.appendChild(el);
+    requestAnimationFrame(() => {
+      el.style.transform = `translate(${-40 - Math.random()*40}px, ${-180 - Math.random()*140}px)`;
+      el.style.opacity = '0';
+    });
+    setTimeout(() => el.remove(), 2400);
+  };
+
+  const renderReferences = (products) => {
+    const list = (products || []).filter(Boolean);
+    const oldIds = new Set([...referenceStack.querySelectorAll('.live-reference-card')].map(el => el.dataset.productId));
+    const newIds = new Set(list.map(p => String(p.id)));
+    [...referenceStack.querySelectorAll('.live-reference-card')].forEach(el => {
+      if (!newIds.has(el.dataset.productId)) el.classList.add('sold-out');
+    });
+    setTimeout(() => {
+      referenceStack.querySelectorAll('.live-reference-card').forEach(el => el.remove());
+      list.slice(0, 4).forEach(product => {
+        const a = document.createElement('a');
+        a.className = 'live-reference-card';
+        a.href = product.public_url || '/cliente/vitrine';
+        a.dataset.productId = String(product.id);
+        const img = product.image_url || '/static/img/logo-brechorisee-tight.png';
+        const clipBadge = product.clip_url ? '<span class="clip-mini-badge">🎬 vídeo curto</span>' : '';
+        a.innerHTML = `<img src="${img}" alt="${product.title || 'Peça'}"><span><strong>${product.title || 'Peça'}</strong><small>${product.price_label || ''}</small>${clipBadge}</span><span class="chev">›</span>`;
+        referenceStack.insertBefore(a, referenceEmpty);
+      });
+      referenceEmpty.style.display = list.length ? 'none' : 'block';
+    }, 280);
+  };
+
+  const avatarFor = (name='') => {
+    const letters = (name || 'C').trim().slice(0,1).toUpperCase();
+    return `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f7b0c5,#ddb4ff);color:#222;font-weight:800;">${letters}</div>`;
+  };
+
+  const renderComments = (comments, reactions) => {
+    chatBox.innerHTML = '';
+    const merged = [];
+    (comments || []).slice(-5).forEach(item => merged.push({type:'comment', ...item}));
+    (reactions || []).slice(-3).forEach(item => merged.push({type:'reaction', ...item}));
+    merged.sort((a,b) => String(a.created_at || '').localeCompare(String(b.created_at || '')));
+    merged.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'live-comment';
+      if (item.type === 'reaction') {
+        div.innerHTML = `<div class="live-comment-avatar">${avatarFor(item.author_name || 'C')}</div><div class="live-comment-body"><div class="live-comment-author">${item.author_name || 'Cliente'}</div><div class="live-comment-reaction">${item.emoji || '❤️'}</div></div>`;
+      } else {
+        div.innerHTML = `<div class="live-comment-avatar">${avatarFor(item.author_name || 'C')}</div><div class="live-comment-body"><div class="live-comment-author">${item.author_name || 'Cliente'}</div><div class="live-comment-text">${item.message || ''}</div></div>`;
+      }
+      chatBox.appendChild(div);
+    });
+  };
+
+
+  const openSearchSheet = () => {
+    referenceSearchSheet?.classList.add('open');
+    setTimeout(() => referenceSearchCode?.focus(), 80);
+  };
+  const closeSearchSheet = () => referenceSearchSheet?.classList.remove('open');
+
+  const renderSearchResults = (results) => {
+    referenceSearchResults.innerHTML = '';
+    if (!results || !results.length) {
+      referenceSearchMessage.textContent = 'Nenhuma referência encontrada. Tente outro código ou um print mais próximo da peça.';
+      return;
+    }
+    referenceSearchMessage.textContent = `${results.length} referência(s) encontrada(s).`;
+    results.forEach(product => {
+      const card = document.createElement('article');
+      card.className = 'live-search-result';
+      card.dataset.productId = String(product.id);
+      const img = product.image_url || '/static/img/logo-brechorisee-tight.png';
+      const tag = product.in_live_reference ? 'Referência da live/repescagem' : 'Peça disponível';
+      card.innerHTML = `
+        <img src="${img}" alt="${product.title || 'Peça'}">
+        <div>
+          <strong>${product.title || 'Peça'}</strong>
+          <small>${product.code || ''} • ${product.price_label || ''}</small>
+          <small>${tag}${product.score ? ' • semelhança ' + Math.round(product.score) + '%' : ''}</small>
+        </div>
+        <div class="result-buttons">
+          <button class="btn-mini primary" type="button" data-decision="selecionada">Selecionar</button>
+          <button class="btn-mini ghost" type="button" data-decision="descartada">Descartar</button>
+          <a class="btn-mini ghost" href="${product.public_url || '/cliente/vitrine'}">Abrir peça</a>
+        </div>
+      `;
+      referenceSearchResults.appendChild(card);
+    });
+  };
+
+  async function searchReference(ev) {
+    ev?.preventDefault?.();
+    if (!liveSessionId) {
+      referenceSearchMessage.textContent = 'Aguarde a live carregar para buscar referências.';
+      return;
+    }
+    const fd = new FormData();
+    fd.append('session_id', String(liveSessionId));
+    fd.append('q', referenceSearchCode?.value || '');
+    if (referenceSearchImage?.files?.[0]) fd.append('image', referenceSearchImage.files[0]);
+    referenceSearchMessage.textContent = 'Procurando referência...';
+    referenceSearchResults.innerHTML = '';
+    const res = await fetch('/api/public-live/search-reference', { method: 'POST', body: fd, credentials: 'same-origin' }).catch(() => null);
+    if (!res || !res.ok) {
+      referenceSearchMessage.textContent = 'Não foi possível buscar agora. Tente novamente.';
+      return;
+    }
+    const data = await res.json();
+    if (data.session_id) liveSessionId = data.session_id;
+    renderSearchResults(data.results || []);
+    if (data.message) referenceSearchMessage.textContent = data.message;
+  }
+
+  async function decideReference(productId, decision, card) {
+    if (!liveSessionId || !productId) return;
+    const fd = new FormData();
+    fd.append('session_id', String(liveSessionId));
+    fd.append('product_id', String(productId));
+    fd.append('decision', decision);
+    const res = await fetch('/api/public-live/reference-decision', { method: 'POST', body: fd, credentials: 'same-origin' }).catch(() => null);
+    if (!res || !res.ok) {
+      referenceSearchMessage.textContent = 'Essa referência não está mais disponível.';
+      card?.remove();
+      refreshLive();
+      return;
+    }
+    const data = await res.json();
+    if (decision === 'descartada') {
+      card?.remove();
+      referenceSearchMessage.textContent = 'Referência descartada.';
+    } else {
+      referenceSearchMessage.textContent = 'Referência selecionada e adicionada à live/repescagem.';
+      refreshLive();
+      if (data.open_url) {
+        // mantém a cliente na live, mas o botão "Abrir peça" continua disponível.
+      }
+    }
+  }
+
+  async function refreshLive() {
+    if (refreshLiveBusy || document.hidden) return;
+    refreshLiveBusy = true;
+    try {
+      const res = await fetch('/api/public-live/current', { credentials: 'same-origin', cache: 'no-store' }).catch(() => null);
+      if (!res || !res.ok) return;
+      const data = await res.json();
+      const live = data.live;
+      if (!live) return;
+      liveSessionId = live.id;
+      const isLive = live.status === 'ao_vivo';
+      statusPill.textContent = isLive ? 'AO VIVO' : (live.status || 'AGUARDANDO').toUpperCase();
+      emptyState.style.display = isLive ? 'none' : 'flex';
+      if (live.snapshot_url && live.snapshot_url !== lastSnapshotUrl) {
+        lastSnapshotUrl = live.snapshot_url;
+        stage.src = `${live.snapshot_url}${live.snapshot_url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+      }
+      renderReferences(live.reference_products || (live.current_product ? [live.current_product] : []));
+      renderComments(live.comments || [], live.reactions || []);
+      viewerCount.textContent = String(live.viewer_count || 0);
+    } finally {
+      refreshLiveBusy = false;
+    }
+  }
+
+  commentForm?.addEventListener('submit', async () => {
+    const message = (commentInput.value || '').trim();
+    if (!message || !liveSessionId) return;
+    const fd = new FormData();
+    fd.append('session_id', String(liveSessionId));
+    fd.append('message', message);
+    const res = await fetch('/api/public-live/comment', { method: 'POST', body: fd, credentials: 'same-origin' });
+    if (res.ok) {
+      commentInput.value = '';
+      refreshLive();
+    }
+  });
+
+  document.querySelectorAll('.reaction-launch').forEach(btn => btn.addEventListener('click', async () => {
+    const emoji = btn.dataset.emoji || '❤️';
+    makeHeart(emoji);
+    if (!liveSessionId) return;
+    const fd = new FormData();
+    fd.append('session_id', String(liveSessionId));
+    fd.append('emoji', emoji);
+    await fetch('/api/public-live/reaction', { method: 'POST', body: fd, credentials: 'same-origin' }).catch(() => {});
+    refreshLive();
+  }));
+
+  openReferenceSearchBtn?.addEventListener('click', openSearchSheet);
+  closeReferenceSearchBtn?.addEventListener('click', closeSearchSheet);
+  referenceSearchSheet?.addEventListener('click', (ev) => {
+    if (ev.target === referenceSearchSheet) closeSearchSheet();
+  });
+  referenceSearchForm?.addEventListener('submit', searchReference);
+  clearReferenceSearchBtn?.addEventListener('click', () => {
+    referenceSearchCode.value = '';
+    referenceSearchImage.value = '';
+    referenceSearchResults.innerHTML = '';
+    referenceSearchMessage.textContent = '';
+  });
+  referenceSearchResults?.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('[data-decision]');
+    if (!btn) return;
+    const card = btn.closest('.live-search-result');
+    decideReference(card?.dataset.productId, btn.dataset.decision, card);
+  });
+
+  refreshLive();
+  setInterval(refreshLive, 5000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshLive(); });
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% block page_title %}Central da Live{% endblock %}
+{% block content %}
+<style>
+.central-live{display:grid;gap:16px}.central-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.live-status-pill{display:inline-flex;gap:8px;align-items:center;border-radius:999px;background:#ffe5ee;color:#b02256;padding:8px 13px;font-weight:800}.central-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.stat-card{background:#fff7f2;border:1px solid #f1dfd6;border-radius:20px;padding:14px}.stat-card strong{font-size:1.35rem;display:block}.central-grid{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(360px,.88fr);gap:16px}.piece-card{display:grid;grid-template-columns:180px minmax(0,1fr);gap:16px;align-items:start}.piece-card img{width:180px;height:220px;border-radius:24px;object-fit:contain;object-position:center;background:#fffaf5;padding:8px}.piece-meta{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.piece-meta span,.tag{padding:7px 10px;border-radius:999px;background:#f4ebe6;color:#704033;font-weight:700;font-size:.88rem}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}.action-grid .btn{width:100%;justify-content:center}.queue-list,.comment-list,.reservation-list,.cart-list{display:grid;gap:10px;max-height:520px;overflow:auto;padding-right:4px}.queue-row,.comment-row,.reservation-row,.cart-row{display:grid;gap:8px;padding:12px;border:1px solid #eee1da;border-radius:18px;background:#fffaf7}.queue-row{grid-template-columns:54px minmax(0,1fr) auto;align-items:center}.queue-row img{width:54px;height:54px;border-radius:14px;object-fit:cover;background:#f3e8e1}.row-title{font-weight:800}.muted{color:#766b64}.intent{display:inline-flex;align-items:center;border-radius:999px;padding:6px 9px;font-size:.78rem;font-weight:800;background:#efe7ff;color:#55319b}.intent.reserva,.intent.fila_espera{background:#ffe1e8;color:#9b214a}.intent.preco,.intent.medidas,.intent.tamanho,.intent.link{background:#e8f3ff;color:#1d5684}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}.copy-area{width:100%;min-height:130px}.qr-box{display:flex;gap:12px;align-items:center;padding:12px;border-radius:18px;background:#fff7f2}.qr-box img{width:96px;height:96px;border-radius:10px;background:#fff}.timer-big{font-size:2rem;font-weight:900;color:#a84d3a}.mini-form{display:grid;grid-template-columns:1fr auto;gap:10px}.mini-form input{min-width:0}.status-chip{padding:5px 8px;border-radius:999px;background:#eee;font-size:.78rem;font-weight:800}.status-chip.aguardando_pagamento{background:#fff0cd;color:#7a5200}.status-chip.fila_espera{background:#eaf0ff;color:#264d9a}.status-chip.pago,.status-chip.vendido{background:#e4f5e8;color:#245b31}.status-chip.desistiu{background:#f1e4e4;color:#842323}.quick-replies{display:flex;gap:8px;flex-wrap:wrap}.quick-replies button{border:1px solid #eadfd8;background:#fff;border-radius:999px;padding:8px 10px;cursor:pointer}.notice-line{min-height:20px;font-weight:800;color:#7b3f2f}@media(max-width:1050px){.central-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.central-grid,.two-col{grid-template-columns:1fr}.piece-card{grid-template-columns:1fr}.piece-card img{width:100%;height:min(58vh,320px);object-fit:contain}.action-grid{grid-template-columns:1fr}.mini-form{grid-template-columns:1fr}}
+</style>
+
+<section class="central-live" data-session-id="{{ session.id }}">
+  <div class="central-head">
+    <div>
+      <p class="eyebrow">Operação da transmissão</p>
+      <h2>Central da Live</h2>
+      <p class="hint">Controle peça atual, fila, comentários, reservas, carrinhos e pós-live em uma única tela.</p>
+      <p><span class="live-status-pill" id="sessionStatus">AO VIVO</span> <span class="muted">Sessão #{{ session.id }} · reserva expira em {{ reservation_timeout }} min</span></p>
+    </div>
+    <div class="inline-actions">
+      <a class="btn ghost" href="/live/studio/{{ session.id }}" target="_blank">Abrir studio</a>
+      <a class="btn ghost" href="/live/apresentadora/{{ session.id }}" target="_blank">Modo apresentadora</a>
+      <a class="btn ghost" href="/live/peca-atual" target="_blank">Página pública</a>
+      <a class="btn" href="/live">Voltar</a>
+    </div>
+  </div>
+
+  <div class="central-stats">
+    <div class="stat-card"><span class="muted">Total vendido</span><strong id="statSold">R$ 0,00</strong><small id="statSoldCount">0 peça(s)</small></div>
+    <div class="stat-card"><span class="muted">Reservado pendente</span><strong id="statPending">R$ 0,00</strong><small id="statPendingCount">0 peça(s)</small></div>
+    <div class="stat-card"><span class="muted">Peças mostradas</span><strong id="statShown">0</strong><small id="statQueue">0 na fila</small></div>
+    <div class="stat-card"><span class="muted">Aguardando resposta</span><strong id="statAnswers">0</strong><small>comentários com intenção</small></div>
+  </div>
+
+  <div class="central-grid">
+    <section class="panel">
+      <div class="section-head no-margin"><div><p class="eyebrow">Peça na tela</p><h2>Atual e próxima</h2></div><div class="timer-big" id="pieceTimer">00:00</div></div>
+      <article class="piece-card" id="currentPiece">
+        <img id="currentImage" src="{{ url_for('static', path='/img/logo-brechorisee-tight.png') }}" alt="Peça atual">
+        <div>
+          <h2 id="currentTitle">Aguardando peça atual...</h2>
+          <p class="muted" id="currentCode">Adicione peças à fila e clique em “Mostrar próxima peça”.</p>
+          <div class="piece-meta">
+            <span id="currentPrice">R$ 0,00</span>
+            <span id="currentSize">Tam. -</span>
+            <span id="currentStatus">status</span>
+          </div>
+          <p id="currentDetails" class="hint"></p>
+          <p><strong>Próxima:</strong> <span id="nextPiece">Sem próxima peça</span></p>
+          <div class="action-grid">
+            <button class="btn primary" type="button" id="showNextBtn">Mostrar próxima peça</button>
+            <button class="btn" type="button" id="reserveBtn">Reservar para cliente</button>
+            <button class="btn" type="button" id="soldBtn">Marcar como vendida</button>
+            <button class="btn ghost" type="button" id="copyAnswerBtn">Copiar resposta Instagram</button>
+            <button class="btn ghost" type="button" id="copyLinkBtn">Enviar/copiar link da peça</button>
+            <button class="btn ghost" type="button" id="copyCartBtn">Copiar carrinho cliente</button>
+          </div>
+          <p class="notice-line" id="noticeLine"></p>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="section-head no-margin"><div><p class="eyebrow">QR Code</p><h2>Peça atual pública</h2></div></div>
+      <div class="qr-box">
+        <img id="currentQr" src="" alt="QR Code da peça atual">
+        <div>
+          <strong>Escaneie para reservar a peça atual</strong>
+          <p class="hint">Abre a página pública da live com botão “Quero reservar”.</p>
+          <button class="btn ghost" type="button" id="copyPublicPageBtn">Copiar página pública</button>
+        </div>
+      </div>
+      <textarea class="copy-area" id="copyBox" readonly placeholder="As mensagens copiadas aparecem aqui."></textarea>
+    </section>
+  </div>
+
+  <div class="central-grid">
+    <section class="panel">
+      <div class="section-head no-margin"><div><p class="eyebrow">Fila inteligente</p><h2>Roteiro de peças</h2></div></div>
+      <form id="queueForm" class="mini-form">
+        <input id="queueInput" placeholder="Código ou nome da peça. Ex: BLUSA-023">
+        <button class="btn primary" type="submit">Adicionar à fila</button>
+      </form>
+      <div class="queue-list" id="queueList" style="margin-top:12px;"></div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head no-margin"><div><p class="eyebrow">Comentários</p><h2>Interesse e resposta</h2></div></div>
+      <form id="manualCommentForm" class="mini-form">
+        <input id="manualCommentInput" placeholder="Registrar comentário manual ou print: Maria: quero">
+        <button class="btn" type="submit">Analisar</button>
+      </form>
+      <div class="comment-list" id="commentList" style="margin-top:12px;"></div>
+    </section>
+  </div>
+
+  <div class="central-grid">
+    <section class="panel">
+      <div class="section-head no-margin"><div><p class="eyebrow">Reservas</p><h2>Fila por ordem de comentário</h2></div></div>
+      <div class="reservation-list" id="reservationList"></div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head no-margin"><div><p class="eyebrow">Carrinhos</p><h2>Clientes da live</h2></div></div>
+      <div class="cart-list" id="cartList"></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="section-head no-margin"><div><p class="eyebrow">Respostas rápidas</p><h2>Copiar e colar</h2></div></div>
+    <div class="quick-replies" id="quickReplies"></div>
+  </section>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const sessionId = Number(document.querySelector('.central-live').dataset.sessionId);
+  let state = null;
+  let currentProduct = null;
+  const $ = (id) => document.getElementById(id);
+  const setNotice = (msg) => { $('noticeLine').textContent = msg || ''; if(msg) setTimeout(()=>{ if($('noticeLine').textContent === msg) $('noticeLine').textContent=''; }, 4500); };
+  const mmss = (s) => { s = Math.max(0, Number(s || 0)); const m = Math.floor(s/60); const sec = Math.floor(s%60); return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; };
+  const copyText = async (txt) => {
+    txt = txt || '';
+    $('copyBox').value = txt;
+    try { await navigator.clipboard.writeText(txt); setNotice('Mensagem copiada.'); }
+    catch(e){ $('copyBox').focus(); $('copyBox').select(); document.execCommand('copy'); setNotice('Mensagem pronta para copiar.'); }
+  };
+  const post = async (url, params={}) => {
+    const fd = new FormData();
+    Object.entries(params).forEach(([k,v]) => fd.append(k, v == null ? '' : String(v)));
+    const res = await fetch(url, {method:'POST', body:fd, credentials:'same-origin'});
+    const data = await res.json().catch(()=>({ok:false,message:'Resposta inválida'}));
+    if(!res.ok || data.ok === false) throw new Error(data.message || 'Erro na ação');
+    return data;
+  };
+  const productMessage = () => state?.current_product_message || 'Peça atual ainda não definida.';
+  const productLink = () => currentProduct?.public_product_url || currentProduct?.short_url || currentProduct?.store_url || '';
+  async function refresh(){
+    const res = await fetch(`/api/live/central/${sessionId}`, {credentials:'same-origin'});
+    state = await res.json();
+    if(!state.ok) return;
+    currentProduct = state.current_product || null;
+    renderStats(); renderCurrent(); renderQueue(); renderComments(); renderReservations(); renderCarts(); renderQuickReplies();
+  }
+  function renderStats(){
+    $('sessionStatus').textContent = (state.session.status || '').replace('_',' ').toUpperCase();
+    $('statSold').textContent = state.stats.sold_total_label;
+    $('statSoldCount').textContent = `${state.stats.sold_count} peça(s)`;
+    $('statPending').textContent = state.stats.pending_reserved_total_label;
+    $('statPendingCount').textContent = `${state.stats.pending_reserved_count} peça(s)`;
+    $('statShown').textContent = state.stats.shown_count;
+    $('statQueue').textContent = `${state.stats.queue_pending_count} na fila`;
+    $('statAnswers').textContent = state.stats.waiting_answer_count;
+  }
+  function renderCurrent(){
+    $('pieceTimer').textContent = mmss(state.current_elapsed_seconds);
+    if(state.qr_url){ $('currentQr').src = state.qr_url; }
+    if(!currentProduct){
+      $('currentImage').src = '/static/img/logo-brechorisee-tight.png';
+      $('currentTitle').textContent = 'Aguardando peça atual...';
+      $('currentCode').textContent = 'Clique em “Mostrar próxima peça”.';
+      $('currentPrice').textContent = 'R$ 0,00'; $('currentSize').textContent='Tam. -'; $('currentStatus').textContent='sem peça';
+      $('currentDetails').textContent = '';
+    } else {
+      $('currentImage').src = currentProduct.image_url || '/static/img/logo-brechorisee-tight.png';
+      $('currentTitle').textContent = currentProduct.title || 'Peça atual';
+      $('currentCode').textContent = `${currentProduct.code || ''} · ${currentProduct.category || currentProduct.garment_type || ''}`;
+      $('currentPrice').textContent = currentProduct.price_label || '';
+      $('currentSize').textContent = `Tam. ${currentProduct.size || '-'}`;
+      $('currentStatus').textContent = currentProduct.status || '';
+      $('currentDetails').textContent = [currentProduct.measurements, currentProduct.condition, currentProduct.characteristics].filter(Boolean).join(' · ');
+    }
+    $('nextPiece').textContent = state.next_product ? `${state.next_product.code} — ${state.next_product.title} (${state.next_product.price_label})` : 'Sem próxima peça';
+  }
+  function renderQueue(){
+    const html = (state.queue || []).map(q => `<div class="queue-row">
+      <img src="${q.image_url || '/static/img/logo-brechorisee-tight.png'}" alt="">
+      <div><div class="row-title">${q.code} — ${q.title}</div><small class="muted">${q.price_label} · ordem ${q.sort_order}</small></div>
+      <span class="status-chip ${q.status}">${q.status}</span>
+    </div>`).join('') || '<div class="empty-state compact"><p>Nenhuma peça na fila.</p></div>';
+    $('queueList').innerHTML = html;
+  }
+  function renderComments(){
+    const rows = (state.waiting_answers || state.comments || []).slice().reverse();
+    $('commentList').innerHTML = rows.map(c => `<div class="comment-row">
+      <div><strong>${c.author_name}</strong> <span class="intent ${c.intent}">${c.intent_label}</span></div>
+      <div>${c.message}</div>
+      <small class="muted">${c.source || ''} · ${c.created_at || ''}</small>
+      <div class="inline-actions">
+        ${c.suggested_action === 'reservar' ? `<button class="btn primary btn-sm" data-reserve-comment="${c.id}" data-customer="${encodeURIComponent(c.author_name)}">Reservar</button>` : ''}
+        <button class="btn ghost btn-sm" data-copy-comment="${c.id}">Copiar resposta</button>
+      </div>
+    </div>`).join('') || '<div class="empty-state compact"><p>Nenhum comentário aguardando resposta.</p></div>';
+  }
+  function renderReservations(){
+    $('reservationList').innerHTML = (state.reservations || []).map(r => `<div class="reservation-row">
+      <div><strong>${r.queue_position}º ${r.customer_name}</strong> <span class="status-chip ${r.status}">${r.status}</span></div>
+      <div>${r.code} — ${r.title} · ${r.price_label}</div>
+      <small class="muted">${r.expires_at ? 'vence em ' + r.expires_at : ''}</small>
+      <div class="inline-actions">
+        ${r.status === 'aguardando_pagamento' ? `<button class="btn primary btn-sm" data-paid="${r.id}">Pix recebido</button><button class="btn ghost btn-sm" data-cancel="${r.id}">Desistiu/liberar</button>` : ''}
+        ${r.status === 'fila_espera' ? `<button class="btn ghost btn-sm" data-cancel="${r.id}">Remover fila</button>` : ''}
+      </div>
+    </div>`).join('') || '<div class="empty-state compact"><p>Nenhuma reserva ativa.</p></div>';
+  }
+  function renderCarts(){
+    $('cartList').innerHTML = (state.carts || []).map(c => `<div class="cart-row">
+      <div><strong>${c.customer_name}</strong> <span class="tag">${c.total_label}</span></div>
+      <small class="muted">${c.items.length} peça(s) · ${c.expires_at ? 'vence ' + c.expires_at : ''}</small>
+      <div>${c.items.map(i => `${i.code} ${i.price_label}`).join(' · ')}</div>
+      <div class="inline-actions"><button class="btn primary btn-sm" data-copy-cart="${c.id}">Copiar carrinho</button><a class="btn ghost btn-sm" href="${c.link}" target="_blank">Abrir</a></div>
+    </div>`).join('') || '<div class="empty-state compact"><p>Nenhum carrinho gerado ainda.</p></div>';
+  }
+  function renderQuickReplies(){
+    $('quickReplies').innerHTML = (state.quick_replies || []).map((r, idx) => `<button type="button" data-reply="${idx}">${r}</button>`).join('');
+  }
+
+  $('showNextBtn').addEventListener('click', async () => { try{ const data = await post(`/api/live/central/${sessionId}/next`); setNotice(data.message); await refresh(); }catch(e){ setNotice(e.message); } });
+  $('reserveBtn').addEventListener('click', async () => {
+    if(!currentProduct){ setNotice('Nenhuma peça atual.'); return; }
+    const name = prompt('Nome da cliente para reservar:');
+    if(!name) return;
+    try{ const data = await post(`/api/live/central/${sessionId}/reserve`, {product_id: currentProduct.id, customer_name: name}); setNotice(data.message); await refresh(); }catch(e){ setNotice(e.message); }
+  });
+  $('soldBtn').addEventListener('click', async () => {
+    if(!currentProduct){ setNotice('Nenhuma peça atual.'); return; }
+    try{ const data = await post(`/api/live/central/${sessionId}/mark-sold`, {product_id: currentProduct.id}); setNotice(data.message); await refresh(); }catch(e){ setNotice(e.message); }
+  });
+  $('copyAnswerBtn').addEventListener('click', () => copyText(productMessage()));
+  $('copyLinkBtn').addEventListener('click', () => copyText(productLink()));
+  $('copyPublicPageBtn').addEventListener('click', () => copyText(currentProduct?.public_current_url || `${location.origin}/live/peca-atual`));
+  $('copyCartBtn').addEventListener('click', () => {
+    const first = state.carts && state.carts[0];
+    copyText(first ? first.message : 'Nenhum carrinho aberto para copiar.');
+  });
+  $('queueForm').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const code = $('queueInput').value.trim();
+    if(!code) return;
+    try{ const data = await post(`/api/live/central/${sessionId}/queue-add`, {product_code: code}); $('queueInput').value=''; setNotice(data.message); await refresh(); }catch(e){ setNotice(e.message); }
+  });
+  $('manualCommentForm').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const raw = $('manualCommentInput').value.trim();
+    if(!raw) return;
+    let customer = 'Cliente', message = raw;
+    const parts = raw.split(':');
+    if(parts.length > 1){ customer = parts.shift().trim() || 'Cliente'; message = parts.join(':').trim(); }
+    try{ await post(`/api/live/central/${sessionId}/register-comment`, {customer_name: customer, message, source: 'manual'}); $('manualCommentInput').value=''; await refresh(); }catch(e){ setNotice(e.message); }
+  });
+  document.addEventListener('click', async (ev) => {
+    const reserveBtn = ev.target.closest('[data-reserve-comment]');
+    const copyComment = ev.target.closest('[data-copy-comment]');
+    const paidBtn = ev.target.closest('[data-paid]');
+    const cancelBtn = ev.target.closest('[data-cancel]');
+    const cartBtn = ev.target.closest('[data-copy-cart]');
+    const replyBtn = ev.target.closest('[data-reply]');
+    try {
+      if(reserveBtn){
+        const name = decodeURIComponent(reserveBtn.dataset.customer || 'Cliente');
+        const data = await post(`/api/live/central/${sessionId}/reserve`, {product_id: currentProduct?.id || 0, customer_name: name, source_comment_id: reserveBtn.dataset.reserveComment});
+        setNotice(data.message); await refresh();
+      } else if(copyComment){
+        const id = Number(copyComment.dataset.copyComment);
+        const c = (state.comments || []).find(x => x.id === id);
+        let txt = productMessage();
+        if(c?.suggested_action === 'responder_preco' && currentProduct) txt = `Essa peça está ${currentProduct.price_label} 💖`;
+        if(c?.suggested_action === 'enviar_medidas' && currentProduct) txt = `As medidas são: ${currentProduct.measurements || 'vou confirmar e te mando já'} 💖`;
+        if(c?.suggested_action === 'responder_tamanho' && currentProduct) txt = `O tamanho disponível é ${currentProduct.size || 'não informado na etiqueta'} 💖`;
+        if(c?.suggested_action === 'enviar_link') txt = productLink();
+        await copyText(txt);
+      } else if(paidBtn){
+        const data = await post(`/api/live/central/reservation/${paidBtn.dataset.paid}/paid`); setNotice(data.message); await refresh();
+      } else if(cancelBtn){
+        const data = await post(`/api/live/central/reservation/${cancelBtn.dataset.cancel}/cancel`); setNotice(data.message); await refresh();
+      } else if(cartBtn){
+        const cart = (state.carts || []).find(c => c.id === Number(cartBtn.dataset.copyCart));
+        await copyText(cart?.message || '');
+      } else if(replyBtn){
+        let txt = state.quick_replies[Number(replyBtn.dataset.reply)] || '';
+        txt = txt.replace('{link}', productLink()).replace('{cart_link}', (state.carts && state.carts[0] && state.carts[0].link) || '');
+        await copyText(txt);
+      }
+    } catch(e){ setNotice(e.message); }
+  });
+  refresh();
+  setInterval(refresh, 5000);
+  setInterval(()=>{ if(state) { state.current_elapsed_seconds = Number(state.current_elapsed_seconds || 0) + 1; $('pieceTimer').textContent = mmss(state.current_elapsed_seconds); } }, 1000);
+});
+</script>
+{% endblock %}

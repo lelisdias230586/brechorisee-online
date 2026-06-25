@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#a84d3a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="brechorisee">
+  <title>{{ app_name or 'brechorisee' }}</title>
+  <link rel="manifest" href="{{ url_for('static', path='/manifest_admin.webmanifest') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', path='/icons/icon-192.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}?v=4.6-atendimento-bot-desejos-aquisicoes">
+</head>
+<body>
+  <div class="brecho-alert-dock brecho-admin-alert-dock" data-brecho-alert-dock aria-label="Resumo de pendências">
+    <a href="/atendimento" class="brecho-alert-pill" data-alert-kind="admin_chat">Chat <b data-alert-count="admin_chat">0</b></a>
+    <a href="/atendimento?status=pendente" class="brecho-alert-pill" data-alert-kind="admin_pending">Pendentes <b data-alert-count="admin_pending">0</b></a>
+    <a href="/reservas" class="brecho-alert-pill" data-alert-kind="reservas">Reservas <b data-alert-count="reservas">0</b></a>
+    <a href="/live" class="brecho-alert-pill" data-alert-kind="live">Live <b data-alert-count="live">0</b></a>
+    <a href="/estoque" class="brecho-alert-pill" data-alert-kind="pieces_new">Peças novas <b data-alert-count="pieces_new">0</b></a>
+  </div>
+  <header class="mobile-appbar">
+    <a class="brand logo-brand compact-brand" href="/" aria-label="BRECHORISEE">
+      <img class="brand-logo compact" src="{{ url_for('static', path='/img/logo-brechorisee-tight.png') }}" alt="BRECHORISEE Moda Circular">
+      <span class="brand-copy">
+        <strong>BRECHORISEE</strong>
+        <small>celular • câmera • caixa</small>
+      </span>
+    </a>
+    <div class="mobile-appbar-actions">
+      <button class="mobile-menu-btn three-dots" id="mobileMenuBtn" type="button" aria-controls="sidebar" aria-expanded="false" title="Menu completo">⋮</button>
+    </div>
+  </header>
+
+  <aside class="sidebar" id="sidebar">
+    <a class="brand logo-brand sidebar-logo-brand" href="/" aria-label="BRECHORISEE">
+      <img class="brand-logo sidebar-logo-img" src="{{ url_for('static', path='/img/logo-brechorisee-tight.png') }}" alt="BRECHORISEE Moda Circular">
+      <span class="brand-copy">
+        <strong>BRECHORISEE</strong>
+        <small>estoque • caixa • IA</small>
+      </span>
+    </a>
+    <nav>
+      <a class="nav-menu-action" href="/admin-sair">Sair admin</a>
+      <button class="nav-menu-action install-app-btn" type="button" hidden>Instalar app</button>
+      <button class="nav-menu-action global-search-btn" type="button">Buscar/Scan</button>
+      <a class="{{ 'active' if active == 'dashboard' else '' }}" href="/">Painel</a>
+      <a class="{{ 'active' if active == 'modulos' else '' }}" href="/modulos">Módulos 360</a>
+      <a class="{{ 'active' if active == 'calculadora' else '' }}" href="/calculadora">Calculadora</a>
+      <a class="{{ 'active' if active == 'consignado' else '' }}" href="/consignado">Montante cliente</a>
+      <a class="{{ 'active' if active == 'inventario' else '' }}" href="/inventario-camera">Inventário câmera</a>
+      <a class="{{ 'active' if active == 'consultor_estilo' else '' }}" href="/consultor-estilo">Consultor estilo</a>
+      <a class="{{ 'active' if active == 'checklist' else '' }}" href="/sistema/checklist">Checklist sistema</a>
+      <a class="{{ 'active' if active == 'usuarios' else '' }}" href="/usuarios">Usuários e senhas</a>
+      <a class="{{ 'active' if active == 'products' else '' }}" href="/products">Peças</a>
+      <a class="{{ 'active' if active == 'caderno' else '' }}" href="/caderno">Caderno por câmera</a>
+      <a class="{{ 'active' if active == 'cashier' else '' }}" href="/cashier">Caixa</a>
+      <a class="{{ 'active' if active == 'whatsapp_sales' else '' }}" href="/whatsapp-vendas">WhatsApp vendas</a>
+      <a class="{{ 'active' if active == 'online_store' else '' }}" href="/loja-admin">Vendas online</a>
+      <a class="{{ 'active' if active == 'notifications' else '' }}" href="/notificacoes">Notificações clientes</a>
+      <a class="{{ 'active' if active == 'telegram' else '' }}" href="/telegram">Telegram interno</a>
+      <a class="{{ 'active' if active == 'atendimento' else '' }}" href="/atendimento">Chat BRECHORISEE</a>
+      <a class="{{ 'active' if active == 'bot-risee' else '' }}" href="/bot-risee">Bot BRECHORISEE</a>
+      <a class="{{ 'active' if active == 'buscas-pecas' else '' }}" href="/buscas-pecas">Buscas de peças</a>
+      <a class="{{ 'active' if active == 'desejos-aquisicoes' else '' }}" href="/desejos-aquisicoes">Desejos e aquisições</a>
+      <a class="{{ 'active' if active == 'ai_customers' else '' }}" href="/ia-clientes">IA clientes</a>
+      <a class="{{ 'active' if active == 'deliveries' else '' }}" href="/deliveries">Entregas</a>
+      <a class="{{ 'active' if active == 'recognize' else '' }}" href="/recognize">Reconhecer foto</a>
+      <a class="{{ 'active' if active == 'live' else '' }}" href="/live">Live / Repescagem</a>
+      <a class="{{ 'active' if active == 'reports' else '' }}" href="/reports">Gráficos</a>
+      <a class="{{ 'active' if active == 'clientes_inteligentes' else '' }}" href="/clientes-inteligentes">Clientes inteligentes</a>
+      <a class="{{ 'active' if active == 'gestao' else '' }}" href="/gestao">Gestão 360</a>
+      <a class="{{ 'active' if active == 'professional' else '' }}" href="/profissional">Profissional</a>
+      <a class="{{ 'active' if active == 'marketing' else '' }}" href="/marketing">Instagram</a>
+      <a class="{{ 'active' if active == 'instagram-studio' else '' }}" href="/instagram-studio">Instagram Studio</a>
+      <a class="{{ 'active' if active == 'stock_history' else '' }}" href="/stock-history">Histórico estoque</a>
+      <a class="{{ 'active' if active == 'ai' else '' }}" href="/ai">IA moda</a>
+      <a class="{{ 'active' if active == 'suppliers' else '' }}" href="/suppliers">Fornecedoras</a>
+      <a class="{{ 'active' if active == 'sales' else '' }}" href="/sales">Vendas</a>
+      <a class="{{ 'active' if active == 'labels' else '' }}" href="/labels">Etiquetas</a>
+      <a class="{{ 'active' if active == 'mobile' else '' }}" href="/celular">Usar no celular</a>
+      <a class="{{ 'active' if active == 'android' else '' }}" href="/android">App Android</a>
+      <a class="{{ 'active' if active == 'sync' else '' }}" href="/sincronizacao">Sincronização</a>
+    </nav>
+    <div class="sidebar-note">
+      Sistema local. Fotos e dados ficam no computador; o celular acessa pela mesma rede Wi‑Fi.
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Sistema de brechó</p>
+        <h1>{% block page_title %}brechorisee{% endblock %}</h1>
+      </div>
+      <div class="top-actions">
+        <a class="btn ghost" href="/admin-sair">Sair admin</a>
+        <button class="btn ghost install-app-btn" type="button" hidden>Instalar app</button>
+        <button class="btn ghost global-search-btn" type="button">Buscar/Scan</button>
+        <a class="btn ghost" href="/whatsapp-vendas">WhatsApp</a>
+        <a class="btn ghost" href="/loja-admin">Online</a>
+        <a class="btn ghost" href="/loja" target="_blank">Vitrine</a>
+        <a class="btn ghost" href="/android">App Android</a>
+        <a class="btn ghost" href="/celular">Celular</a>
+        <a class="btn ghost" href="/gestao">Gestão 360</a>
+        <a class="btn ghost" href="/clientes-inteligentes">Clientes</a>
+        <a class="btn ghost" href="/deliveries">Entregas</a>
+        <a class="btn ghost" href="/profissional">Profissional</a>
+        <a class="btn ghost" href="/live">Live</a>
+        <a class="btn ghost" href="/marketing">Instagram</a>
+        <a class="btn ghost" href="/ai">Assistente IA</a>
+        <a class="btn ghost" href="/caderno">Caderno IA</a>
+        <a class="btn primary" href="/products/new">Cadastrar peça</a>
+      </div>
+    </header>
+
+    {% block content %}{% endblock %}
+  </main>
+
+
+
+  <button class="global-search-fab global-search-btn" id="globalSearchFab" type="button" title="Buscar por digitação, reconhecimento ou código de barras">🔎</button>
+
+  <section class="global-search-modal" id="globalSearchModal" hidden aria-label="Busca global de peças">
+    <div class="global-search-backdrop" data-close-global-search></div>
+    <article class="global-search-panel panel">
+      <div class="section-head no-margin">
+        <div>
+          <p class="eyebrow">Busca global</p>
+          <h2>Encontrar peça em qualquer tela</h2>
+          <p class="hint">Pesquise digitando, leia código de barra/QR Code ou envie uma foto para reconhecimento.</p>
+        </div>
+        <button class="btn ghost" type="button" data-close-global-search>Fechar</button>
+      </div>
+
+      <div class="global-search-tabs">
+        <button class="btn primary" type="button" data-global-tab="text">Digitação</button>
+        <button class="btn" type="button" data-global-tab="barcode">Código/QR</button>
+        <button class="btn" type="button" data-global-tab="photo">Reconhecimento</button>
+      </div>
+
+      <section class="global-tab-panel" data-global-panel="text">
+        <div class="search-row global-search-row">
+          <input id="globalSearchInput" inputmode="search" autocomplete="off" placeholder="Digite código, nome, cor, marca, tamanho, estampa...">
+          <select id="globalSearchStatus">
+            <option value="disponivel">Disponíveis</option>
+            <option value="todos">Todos</option>
+            <option value="reservado">Reservadas</option>
+            <option value="vendido">Vendidas</option>
+          </select>
+          <button class="btn primary" id="globalSearchDoBtn" type="button">Pesquisar</button>
+        </div>
+        <p class="hint">Exemplos: VESTIDO-001, bolsa preta, calça jeans 38, floral Farm.</p>
+      </section>
+
+      <section class="global-tab-panel" data-global-panel="barcode" hidden>
+        <div class="inline-actions">
+          <button class="btn primary" id="globalBarcodeStartBtn" type="button">Ler com câmera</button>
+          <button class="btn ghost" id="globalBarcodeStopBtn" type="button">Parar câmera</button>
+        </div>
+        <video id="globalBarcodeVideo" class="qr-video" playsinline muted></video>
+        <p class="hint" id="globalBarcodeHint">Aponte a câmera para o código de barras ou QR Code da etiqueta.</p>
+        <div class="search-row global-search-row">
+          <input id="globalCodeInput" placeholder="Ou digite o código lido manualmente">
+          <button class="btn primary" id="globalOpenCodeBtn" type="button">Abrir peça</button>
+        </div>
+      </section>
+
+      <section class="global-tab-panel" data-global-panel="photo" hidden>
+        <form id="globalRecognizeForm" class="recognize-mini-form">
+          <label class="camera-field">
+            <span class="camera-card">
+              <input id="globalRecognizeInput" type="file" name="image" accept="image/*" capture="environment">
+              <span class="camera-card-title">📷 Tirar foto ou escolher da galeria</span>
+              <small>Use quando a etiqueta foi perdida ou quando quiser encontrar por semelhança.</small>
+            </span>
+          </label>
+          <button class="btn primary" type="submit">Reconhecer peça</button>
+        </form>
+        <p class="hint" id="globalRecognizeHint"></p>
+      </section>
+
+      <div id="globalSearchResults" class="global-search-results"></div>
+    </article>
+  </section>
+
+  <script src="{{ url_for('static', path='/js/app.js') }}?v=3.2-autofill-resiliente"></script>
+  <script src="{{ url_for('static', path='/js/mobile-camera.js') }}?v=3.2-autofill-resiliente"></script>
+  {% block scripts %}{% endblock %}
+  <script src="{{ url_for('static', path='/js/brechorisee-ux-491.js') }}"></script>
+</body>
+</html>

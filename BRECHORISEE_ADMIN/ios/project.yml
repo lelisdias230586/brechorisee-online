@@ -1,0 +1,27 @@
+name: BRECHORISEEAdmin
+options:
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    SWIFT_VERSION: 5.0
+    DEVELOPMENT_TEAM: "${DEVELOPMENT_TEAM}"
+targets:
+  BRECHORISEEAdmin:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    resources:
+      - Resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.brechorisee.admin
+        PRODUCT_NAME: "BRECHORISEE Admin"
+        INFOPLIST_FILE: Resources/Info.plist
+        TARGETED_DEVICE_FAMILY: "1,2"
+schemes:
+  BRECHORISEEAdmin:
+    build:
+      targets:
+        BRECHORISEEAdmin: all

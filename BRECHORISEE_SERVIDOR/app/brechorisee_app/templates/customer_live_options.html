@@ -1,0 +1,85 @@
+{% extends "public_store_base.html" %}
+{% block store_content %}
+<style>
+.live-choice-wrap{min-height:calc(100vh - 60px);display:grid;place-items:center;padding:22px;background:linear-gradient(135deg,#fff8f4,#f5e5dd)}.live-choice-card{width:min(760px,100%);background:#fff;border-radius:30px;padding:24px;box-shadow:0 24px 80px rgba(95,45,30,.13);border:1px solid #eadfd8}.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}.choice-option{display:flex;flex-direction:column;gap:10px;padding:18px;border-radius:24px;border:1px solid #eadfd8;background:#fffaf7;text-decoration:none;color:inherit}.choice-option.primary{background:linear-gradient(135deg,#a84d3a,#703225);color:#fff}.choice-option strong{font-size:1.1rem}.choice-option small{line-height:1.35}.live-mini-products{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}.mini-product{display:flex;gap:10px;align-items:center;background:#faf6f3;border-radius:18px;padding:10px}.mini-product img{width:58px;height:58px;border-radius:14px;object-fit:cover}.live-status-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.status-live{padding:8px 12px;border-radius:999px;background:#ff1c74;color:#fff;font-weight:800}.status-instagram{padding:8px 12px;border-radius:999px;background:#f4ebe6;color:#7b3f2f;font-weight:700}@media(max-width:720px){.choice-grid,.live-mini-products{grid-template-columns:1fr}.live-choice-wrap{padding:12px}.live-choice-card{border-radius:24px;padding:18px}}
+</style>
+<section class="live-choice-wrap">
+  <article class="live-choice-card">
+    <div class="live-status-row">
+      <span class="status-live">{% if live_info and live_info.status == 'ao_vivo' %}AO VIVO{% else %}AGUARDANDO{% endif %}</span>
+      {% if live_info and live_info.source_platform == 'instagram' %}<span class="status-instagram">Live no Instagram</span>{% endif %}
+    </div>
+    <h1 style="margin:14px 0 6px;">Como você quer acompanhar?</h1>
+    <p class="hint">Você pode assistir pelo Instagram ou acompanhar pelo BRECHORISEE com referências, botão de compra, busca por print e repescagem organizada.</p>
+
+    <div class="choice-grid">
+      {% if live_info and live_info.instagram_live_url %}
+      <a class="choice-option primary" href="{{ live_info.instagram_live_url }}" target="_blank">
+        <strong>Assistir no Instagram</strong>
+        <small>Abre a live no Instagram. Ideal para quem prefere acompanhar por lá.</small>
+        <span>Entrar no Instagram →</span>
+      </a>
+      {% else %}
+      <div class="choice-option primary">
+        <strong>Instagram</strong>
+        <small>O link do Instagram ainda não foi configurado pela loja.</small>
+      </div>
+      {% endif %}
+
+      {% if not live_info or live_info.brechorisee_watch_enabled %}
+      <a class="choice-option" href="/cliente/live">
+        <strong>Acompanhar pelo BRECHORISEE</strong>
+        <small>Veja peças reconhecidas, referências, preços, chat próprio e botão para reservar/comprar.</small>
+        <span>Abrir live no app →</span>
+      </a>
+      {% else %}
+      <div class="choice-option">
+        <strong>BRECHORISEE</strong>
+        <small>A loja deixou o acompanhamento pelo app desligado nesta live.</small>
+      </div>
+      {% endif %}
+    </div>
+    <div class="choice-grid" style="margin-top:14px;">
+      <a class="choice-option primary" href="brechorisee://live-companion?abrir_instagram=1">
+        <strong>Instagram + card flutuante do app</strong>
+        <small>O app mostra a peça atual por cima do Instagram, usando dados da Central da Live. Não lê sua tela.</small>
+        <span>Abrir modo companion →</span>
+      </a>
+      <a class="choice-option" href="/live/peca-atual">
+        <strong>Estou sem app agora</strong>
+        <small>Continue pelo navegador: veja a peça atual, reserve e entre na fila.</small>
+        <span>Reservar sem app →</span>
+      </a>
+    </div>
+
+    <div style="margin-top:14px;padding:14px;border-radius:20px;background:#fff8f4;border:1px dashed #d8ac9d;">
+      <strong>Para as próximas lives</strong>
+      <p class="hint" style="margin:6px 0 0;">Baixe o app BRECHORISEE para receber alertas, card flutuante da peça atual e reserva com menos toques.</p>
+      <div class="inline-actions" style="margin-top:10px;">
+        <a class="btn primary" href="{{ app_links.download if app_links else '/app/cliente' }}">Baixar app</a>
+        <a class="btn ghost" href="/live/companion">Abrir companion web</a>
+        <a class="btn ghost" href="/cliente/tutorial">Ver tutorial animado</a>
+      </div>
+    </div>
+
+
+    {% if live_info and live_info.reference_products %}
+    <h2 style="margin-top:22px;">Referências no ar</h2>
+    <div class="live-mini-products">
+      {% for p in live_info.reference_products %}
+      <a class="mini-product" href="{{ p.public_url }}">
+        {% if p.image_url %}<img src="{{ p.image_url }}" alt="{{ p.title }}">{% endif %}
+        <div><strong>{{ p.title }}</strong><br><small>{{ p.price_label }} • {{ p.code }}</small></div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="inline-actions" style="margin-top:20px;">
+      <a class="btn ghost" href="/cliente/vitrine">Voltar para vitrine</a>
+      <a class="btn" href="/cliente/live">Buscar por print/código</a>
+      <a class="btn ghost" href="/cliente/tutorial">Como usar app/site</a>
+    </div>
+  </article>
+</section>
+{% endblock %}

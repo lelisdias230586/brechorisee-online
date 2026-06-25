@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block page_title %}{{ sale.sale_code }}
+<section class="panel delivery-after-sale">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Entrega da venda</p>
+      <h2>{{ 'Entrega registrada' if delivery else 'Programar entrega' }}</h2>
+      <p class="hint">Controle se as peças desta venda já foram entregues ou ainda estão pendentes.</p>
+    </div>
+    <a class="btn ghost" href="/deliveries">Ver entregas</a>
+  </div>
+
+  {% if delivery %}
+    <div class="delivery-status-row">
+      <span class="pill {{ delivery.status }}">{{ delivery.status_label }}</span>
+      {% if delivery.maps.google_maps %}<a class="btn primary" href="{{ delivery.maps.google_maps }}" target="_blank">Google Maps</a>{% endif %}
+      {% if delivery.maps.waze %}<a class="btn" href="{{ delivery.maps.waze }}" target="_blank">Waze</a>{% endif %}
+    </div>
+    <p><strong>Endereço:</strong> {{ delivery.address or '-' }} {{ delivery.city or '' }}</p>
+    <p><strong>Cliente:</strong> {{ delivery.customer_name or sale.customer or '-' }} • {{ delivery.phone or '-' }}</p>
+    <form method="post" action="/deliveries/{{ delivery.id }}/status" class="inline-form">
+      <select name="status">
+        <option value="pendente" {{ 'selected' if delivery.status == 'pendente' else '' }}>Pendente</option>
+        <option value="separado" {{ 'selected' if delivery.status == 'separado' else '' }}>Separado</option>
+        <option value="rota" {{ 'selected' if delivery.status == 'rota' else '' }}>Em rota</option>
+        <option value="entregue" {{ 'selected' if delivery.status == 'entregue' else '' }}>Entregue</option>
+        <option value="cancelada" {{ 'selected' if delivery.status == 'cancelada' else '' }}>Cancelada</option>
+      </select>
+      <input name="route_notes" placeholder="Observação da entrega">
+      <button class="btn primary" type="submit">Atualizar</button>
+    </form>
+  {% else %}
+    <form method="post" action="/deliveries/create" class="delivery-form">
+      <input type="hidden" name="sale_id" value="{{ sale.id }}">
+      <label>Cliente <input name="customer_name" value="{{ sale.customer or '' }}" placeholder="Nome da cliente"></label>
+      <label>Telefone/WhatsApp <input name="phone" inputmode="tel" placeholder="(00) 00000-0000"></label>
+      <label>Endereço <input name="address" placeholder="Rua, número, bairro"></label>
+      <label>Cidade/complemento <input name="city" placeholder="Cidade, referência ou complemento"></label>
+      <label>Data combinada <input name="scheduled_at" type="datetime-local"></label>
+      <label>Observações <textarea name="route_notes" placeholder="Ex.: entregar após 18h, portaria, retirar na loja..."></textarea></label>
+      <button class="btn primary" type="submit">Salvar entrega</button>
+    </form>
+  {% endif %}
+</section>
+
+{% endblock %}
+{% block content %}
+<section class="panel receipt">
+  <div class="receipt-head">
+    <div>
+      <p class="eyebrow">Comprovante</p>
+      <h2>{{ sale.sale_code }}</h2>
+      <p>{{ sale.created_at }} • {{ sale.payment_method }}</p>
+    </div>
+    <button class="btn" onclick="window.print()">Imprimir</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Peça</th><th>Código</th><th>Atributos</th><th>Preço</th></tr></thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td><strong>{{ item.title }}</strong></td>
+          <td>{{ item.code }}</td>
+          <td>{{ item.garment_type or '-' }} • {{ item.size or '-' }} • {{ item.color or '-' }}</td>
+          <td>{{ item.price|money }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="receipt-total">
+    <span>Desconto</span><strong>{{ sale.discount|money }}</strong>
+    <span>Total</span><strong>{{ sale.total|money }}</strong>
+    <span>Recebido</span><strong>{{ sale.paid|money }}</strong>
+    <span>Troco</span><strong>{{ sale.change_value|money }}</strong>
+  </div>
+</section>
+
+<section class="panel delivery-after-sale">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Entrega da venda</p>
+      <h2>{{ 'Entrega registrada' if delivery else 'Programar entrega' }}</h2>
+      <p class="hint">Controle se as peças desta venda já foram entregues ou ainda estão pendentes.</p>
+    </div>
+    <a class="btn ghost" href="/deliveries">Ver entregas</a>
+  </div>
+
+  {% if delivery %}
+    <div class="delivery-status-row">
+      <span class="pill {{ delivery.status }}">{{ delivery.status_label }}</span>
+      {% if delivery.maps.google_maps %}<a class="btn primary" href="{{ delivery.maps.google_maps }}" target="_blank">Google Maps</a>{% endif %}
+      {% if delivery.maps.waze %}<a class="btn" href="{{ delivery.maps.waze }}" target="_blank">Waze</a>{% endif %}
+    </div>
+    <p><strong>Endereço:</strong> {{ delivery.address or '-' }} {{ delivery.city or '' }}</p>
+    <p><strong>Cliente:</strong> {{ delivery.customer_name or sale.customer or '-' }} • {{ delivery.phone or '-' }}</p>
+    <form method="post" action="/deliveries/{{ delivery.id }}/status" class="inline-form">
+      <select name="status">
+        <option value="pendente" {{ 'selected' if delivery.status == 'pendente' else '' }}>Pendente</option>
+        <option value="separado" {{ 'selected' if delivery.status == 'separado' else '' }}>Separado</option>
+        <option value="rota" {{ 'selected' if delivery.status == 'rota' else '' }}>Em rota</option>
+        <option value="entregue" {{ 'selected' if delivery.status == 'entregue' else '' }}>Entregue</option>
+        <option value="cancelada" {{ 'selected' if delivery.status == 'cancelada' else '' }}>Cancelada</option>
+      </select>
+      <input name="route_notes" placeholder="Observação da entrega">
+      <button class="btn primary" type="submit">Atualizar</button>
+    </form>
+  {% else %}
+    <form method="post" action="/deliveries/create" class="delivery-form">
+      <input type="hidden" name="sale_id" value="{{ sale.id }}">
+      <label>Cliente <input name="customer_name" value="{{ sale.customer or '' }}" placeholder="Nome da cliente"></label>
+      <label>Telefone/WhatsApp <input name="phone" inputmode="tel" placeholder="(00) 00000-0000"></label>
+      <label>Endereço <input name="address" placeholder="Rua, número, bairro"></label>
+      <label>Cidade/complemento <input name="city" placeholder="Cidade, referência ou complemento"></label>
+      <label>Data combinada <input name="scheduled_at" type="datetime-local"></label>
+      <label>Observações <textarea name="route_notes" placeholder="Ex.: entregar após 18h, portaria, retirar na loja..."></textarea></label>
+      <button class="btn primary" type="submit">Salvar entrega</button>
+    </form>
+  {% endif %}
+</section>
+
+{% endblock %}

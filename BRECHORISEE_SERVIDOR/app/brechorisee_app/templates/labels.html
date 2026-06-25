@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block page_title %}Etiquetas QR Code{% endblock %}
+{% block content %}
+<section class="panel print-panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Impressão</p>
+      <h2>Etiquetas das peças disponíveis</h2>
+    </div>
+    <button class="btn primary" onclick="window.print()">Imprimir etiquetas</button>
+  </div>
+  <div class="labels-grid">
+    {% for p in products %}
+      <div class="label-card">
+        <div>
+          <img class="label-logo" src="{{ url_for('static', path='/img/logo-brechorisee-tight.png') }}" alt="BRECHORISEE">
+          <span>{{ p.title }}</span>
+          <b>{{ p.sale_price|money }}</b>
+          <small>{{ p.code }}</small>
+        </div>
+        <img src="{{ url_for('static', path='/qrcodes/' ~ p.code ~ '.png') }}" alt="QR {{ p.code }}">
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <h3>Nenhuma peça disponível para etiqueta.</h3>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

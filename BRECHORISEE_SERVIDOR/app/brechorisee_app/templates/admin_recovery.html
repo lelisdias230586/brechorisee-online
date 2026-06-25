@@ -1,0 +1,47 @@
+{% extends "public_store_base.html" %}
+{% block store_content %}
+<section class="store-hero-modern customer-access-hero">
+  <div class="hero-copy">
+    <p class="eyebrow">Recuperação administrativa</p>
+    <h1>Criar ou alterar senha admin.</h1>
+    <p>Use esta tela quando já existe um administrador no banco e você precisa recuperar o acesso sem apagar dados.</p>
+    <div class="inline-actions">
+      <a class="btn ghost" href="/admin-acesso">Voltar ao login</a>
+      <a class="btn ghost" href="/cliente">Área da cliente</a>
+    </div>
+  </div>
+  <div class="hero-card">
+    <strong>Segurança</strong>
+    <span>Em produção, informe o token configurado no Render.</span>
+    <small>Variável: BRECHORISEE_ADMIN_RECOVERY_TOKEN</small>
+  </div>
+</section>
+
+<section class="auth-card-wrap">
+  <article class="panel auth-card">
+    {% if error %}<div class="alert danger">{{ error }}</div>{% endif %}
+    <p class="eyebrow">Admin</p>
+    <h2>Definir senha administrativa</h2>
+    <form method="post" action="/admin-recuperar/salvar" class="stack-form">
+      <input type="hidden" name="next" value="{{ next or '/' }}">
+      <label>Nome / usuário admin
+        <input name="name" required placeholder="Ex.: BRECHORISEE Admin">
+      </label>
+      <label>E-mail opcional
+        <input name="email" type="email" placeholder="admin@brechorisee.com">
+      </label>
+      <label>Nova senha
+        <input name="password" type="password" required placeholder="Mínimo 6 caracteres">
+      </label>
+      <label>Token de recuperação{% if token_required %} obrigatório{% else %} opcional no modo local{% endif %}
+        <input name="token" type="password" placeholder="BRECHORISEE_ADMIN_RECOVERY_TOKEN">
+      </label>
+      <button class="btn primary wide" type="submit">Salvar senha admin</button>
+    </form>
+    <p class="hint" style="margin-top:14px;">
+      No Render, crie uma variável <code>BRECHORISEE_ADMIN_RECOVERY_TOKEN</code> com um valor secreto,
+      faça deploy e informe o mesmo valor aqui. Depois de recuperar, você pode remover essa variável.
+    </p>
+  </article>
+</section>
+{% endblock %}

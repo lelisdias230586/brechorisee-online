@@ -1,0 +1,110 @@
+{% extends "public_store_base.html" %}
+{% block store_content %}
+<section class="store-hero-modern customer-dashboard">
+  <div class="hero-copy">
+    <p class="eyebrow">Olá, {{ account.name }}</p>
+    <h1>Área da cliente BRECHORISEE.</h1>
+    <p>Login confirmado. Você não entra na live automaticamente: escolha abaixo o que deseja fazer.</p>
+    <div class="inline-actions brecho-customer-action-stack">
+      {% if live_info and live_info.status == 'ao_vivo' %}
+        <a class="btn primary" href="/cliente/live-opcoes">Entrar na live</a>
+      {% else %}
+        <a class="btn ghost" href="/cliente/novidades">Avisos e novidades{% if unread_notifications and unread_notifications > 0 %} • {{ unread_notifications }}{% endif %}</a>
+      {% endif %}
+      <a class="btn ghost" href="/cliente/vitrine">Ver vitrine e peças novas</a>
+      <a class="btn ghost" href="/loja/carrinho">Minha sacola / carrinho</a>
+      <a class="btn ghost" href="/cliente/entregas">Minhas entregas</a>
+      <a class="btn ghost" href="/cliente/chat">Falar no Chat BRECHORISEE</a>
+      <a class="btn ghost" href="/cliente/perfil">Minha conta</a>
+      <a class="btn ghost" href="/cliente/tutorial">Como usar</a>
+      <a class="btn ghost" href="/cliente/sair">Sair</a>
+    </div>
+  </div>
+  <div class="hero-card">
+    <strong>Fluxo seguro</strong>
+    <span>Cadastro/login → área da cliente → ação escolhida pela cliente.</span>
+    <small>Live, reserva e app só abrem com toque explícito.</small>
+  </div>
+</section>
+
+{% if live_info and live_info.status == 'ao_vivo' %}
+<section class="panel" style="margin-top:14px;border:1px solid rgba(180,89,60,.18);">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Live no ar</p>
+      <h2>Deseja entrar agora?</h2>
+      <p class="hint">A live está disponível, mas não abre automaticamente após o login. Toque no botão quando quiser acompanhar.</p>
+    </div>
+    <a class="btn primary" href="/cliente/live-opcoes">Entrar na live</a>
+    <a class="btn ghost" href="/cliente/vitrine">Continuar na vitrine</a>
+  </div>
+  {% if live_info.current_product %}
+  <div class="inline-actions" style="align-items:center;gap:16px;margin-top:14px;flex-wrap:wrap;">
+    {% if live_info.current_product.image_url %}<img src="{{ live_info.current_product.image_url }}" alt="{{ live_info.current_product.title }}" class="live-current-thumb">{% endif %}
+    <div>
+      <strong>Peça em destaque agora:</strong><br>
+      {{ live_info.current_product.title }} • {{ live_info.current_product.price_label }}
+    </div>
+    <a class="btn ghost" href="{{ live_info.current_product.public_url }}">Ver peça sem entrar na live</a>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Atalhos</p>
+    <h2>O que você quer fazer?</h2>
+  </div>
+</section>
+<section class="store-grid modern-grid">
+  <article class="store-product-card modern-card">
+    <div class="store-product-info">
+      <strong>Vitrine</strong>
+      <small>Ver peças disponíveis e sugestões para você.</small>
+      <a class="btn primary" href="/cliente/vitrine">Abrir vitrine</a>
+    </div>
+  </article>
+  <article class="store-product-card modern-card">
+    <div class="store-product-info">
+      <strong>Minha sacola</strong>
+      <small>Conferir itens reservados e finalizar pedido.</small>
+      <a class="btn primary" href="/loja/carrinho">Abrir sacola</a>
+    </div>
+  </article>
+  <article class="store-product-card modern-card">
+    <div class="store-product-info">
+      <strong>Entregas</strong>
+      <small>Acompanhar pedidos e combinações de entrega.</small>
+      <a class="btn primary" href="/cliente/entregas">Ver entregas</a>
+    </div>
+  </article>
+  <article class="store-product-card modern-card">
+    <div class="store-product-info">
+      <strong>Chat</strong>
+      <small>Falar com a BRECHORISEE sem sair do sistema.</small>
+      <a class="btn primary" href="/cliente/chat">Abrir chat</a>
+    </div>
+  </article>
+</section>
+
+{% if orders %}
+<section class="panel" style="margin-top:16px;">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Últimos pedidos</p>
+      <h2>Resumo rápido</h2>
+    </div>
+    <a class="btn ghost" href="/cliente/entregas">Ver tudo</a>
+  </div>
+  <div class="grid">
+    {% for order in orders %}
+      <div class="mini" style="background:#fff8f4;border:1px solid #eadfd8;border-radius:18px;padding:12px;margin:8px 0;">
+        <b>Pedido #{{ order.id }}</b><br>
+        <small>{{ order.customer_name }} • {{ order.status }}</small>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

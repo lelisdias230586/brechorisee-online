@@ -1,0 +1,741 @@
+{% extends "base.html" %}
+{% block page_title %}Cadastrar peça{% endblock %}
+{% block content %}
+{% set opts = attribute_options or {} %}
+<form id="productForm" class="panel form-card mobile-first-form professional-product-form" method="post" action="/products/new" enctype="multipart/form-data">
+  <section class="mobile-quick-card">
+    <div>
+      <p class="eyebrow">Cadastro inteligente</p>
+      <h2>Fotografe a peça e deixe a IA preencher.</h2>
+      <p>A IA sugere nome, código, categoria, tipo, cor, estilo e características. Você confirma, altera ou digita novas opções; o sistema aprende para os próximos cadastros.</p>
+    </div>
+    <a class="btn" href="#fotoPeca">Ir para foto</a>
+  </section>
+
+  <section class="ai-autofill-panel">
+    <div>
+      <p class="eyebrow">IA do cadastro</p>
+      <h3>Preenchimento automático da peça</h3>
+      <p id="aiAutofillStatus">Tire uma foto ou escreva o nome da peça para receber sugestões.</p>
+    </div>
+    <div class="ai-autofill-actions">
+      <button class="btn primary" id="aiAutofillBtn" type="button">✨ Identificar agora</button>
+      <button class="btn ghost" id="aiApplyAllBtn" type="button">Aplicar tudo</button>
+    </div>
+    <div id="aiSuggestionBox" class="ai-suggestion-box muted-box" aria-live="polite">
+      Nenhuma sugestão ainda.
+    </div>
+  </section>
+
+  <div class="form-section">
+    <p class="eyebrow">Identificação</p>
+    <div class="field-grid">
+      <label>
+        Nome da peça *
+        <input name="title" required placeholder="Ex.: Vestido floral midi" autocomplete="off" data-ai-field="title">
+        <small>A IA pode sugerir pelo texto ou pela foto. Você pode alterar antes de salvar.</small>
+      </label>
+
+      <label class="smart-code-field">
+        Código curto
+        <input id="productCodeInput" name="code" value="{{ generated_code or '' }}" placeholder="Gerado automaticamente" autocomplete="off" autocapitalize="characters" data-auto-filled="1" data-ai-field="code">
+        <input type="hidden" id="autoCodeFlag" name="auto_code" value="1">
+        <small id="codeHelp">Formato: NOME-001. Ex.: VESTIDO-001, SAIA-002, FARM-003 ou FLORAL-004</small>
+        <button class="btn ghost mini-btn" id="generateCodeBtn" type="button">Gerar pelo cadastro</button>
+      </label>
+
+      <label>
+        Categoria
+        <input name="category" list="dl-category" placeholder="Feminino, masculino, infantil, acessórios..." autocomplete="off" data-ai-field="category" data-option-field="category">
+        <datalist id="dl-category">{% for item in opts.get("category", []) %}<option value="{{ item }}">{% endfor %}</datalist>
+        <small>Se não existir na lista, digite. Ela ficará disponível no próximo cadastro.</small>
+      </label>
+
+      <label>
+        Tipo de vestuário
+        <input name="garment_type" list="dl-garment-type" placeholder="Calça, blusa, vestido, jaqueta..." autocomplete="off" data-ai-field="garment_type" data-option-field="garment_type">
+        <datalist id="dl-garment-type">{% for item in opts.get("garment_type", []) %}<option value="{{ item }}">{% endfor %}</datalist>
+      </label>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <p class="eyebrow">Atributos e características</p>
+    <div class="field-grid">
+      <label>
+        Tamanho
+        <input name="size" list="dl-size" placeholder="PP, P, M, G, 38, 40..." autocomplete="off" data-ai-field="size" data-option-field="size">
+        <datalist id="dl-size">{% for item in opts.get("size", []) %}<option value="{{ item }}">{% endfor %}</datalist>
+      </label>
+
+      <label>
+        Marca
+        <input name="brand" list="dl-brand" placeholder="Marca da peça" autocomplete="off" data-ai-field="brand" data-option-field="brand">
+        <datalist id="dl-brand">{% for item in opts.get("brand", []) %}<option value="{{ item }}">{% endfor %}</datalist>
+      </label>
+
+      <label>
+        Cor principal
+        <input name="color" list="dl-color" placeholder="Preto, azul, estampado..." autocomplete="off" data-ai-field="color" data-option-field="color">
+        <datalist id="dl-color">{% for item in opts.get("color", []) %}<option value="{{ item }}">{% endfor %}</datalist>
+      </label>
+
+      <label>
+        Estado
+        <input name="condition" list="dl-condition" value="Seminovo" placeholder="Seminovo" autocomplete="off" data-ai-field="condition" data-option-field="condition">
+        <datalist id="dl-condition">{% for item in opts.get("condition", []) %}<option value="{{ item }}">{% endfor %}</datalist>
+      </label>
+
+      <label>
+        Estação / ocasião
+        <input name="season" list="dl-season" placeholder="Verão, inverno, festa, trabalho, casual..." autocomplete="off" data-ai-field="season" data-option-field="season">
+        <datalist id="dl-season">{% for item in opts.get("season", []) %}<option value="{{ item }}">{% endfor %}</datalist>
+      </label>
+
+      <label>
+        Público / estilo
+        <input name="target_audience" list="dl-target-audience" placeholder="Jovem, clássico, plus size, vintage..." autocomplete="off" data-ai-field="target_audience" data-option-field="target_audience">
+        <datalist id="dl-target-audience">{% for item in opts.get("target_audience", []) %}<option value="{{ item }}">{% endfor %}</datalist>
+      </label>
+
+      <label class="span-2">
+        Tags de estilo
+        <input name="style_tags" list="dl-style-tags" placeholder="alfaiataria, oversized, floral, vintage, minimalista..." autocomplete="off" data-ai-field="style_tags" data-option-field="style_tags">
+        <datalist id="dl-style-tags">{% for item in opts.get("style_tags", []) %}<option value="{{ item }}">{% endfor %}</datalist>
+        <small>Separe várias tags por vírgula. Cada tag nova será aprendida.</small>
+      </label>
+
+      <label class="span-2">
+        Medidas
+        <input name="measurements" placeholder="Busto 90 cm, cintura 72 cm, comprimento 80 cm..." autocomplete="off" data-ai-field="measurements">
+      </label>
+
+      <label class="span-2">
+        Características
+        <textarea name="characteristics" list="dl-characteristics" placeholder="Tecido, estampa, manga, gola, detalhes, avarias, ocasião..." data-ai-field="characteristics" data-option-field="characteristics"></textarea>
+        <datalist id="dl-characteristics">{% for item in opts.get("characteristics", []) %}<option value="{{ item }}">{% endfor %}</datalist>
+        <small>Digite qualquer característica nova. Ela entra nas sugestões futuras.</small>
+      </label>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <p class="eyebrow">Preço, fornecedora e foto</p>
+    <div class="field-grid">
+      <label>
+        Custo / repasse
+        <input type="number" step="0.01" inputmode="decimal" name="cost_price" value="0">
+      </label>
+      <label>
+        Preço de venda *
+        <input type="number" step="0.01" inputmode="decimal" name="sale_price" required placeholder="0,00">
+      </label>
+      <label>
+        Fornecedora
+        <select name="supplier_id">
+          {% for s in suppliers %}
+            <option value="{{ s.id }}">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label id="fotoPeca" class="span-2 camera-field">
+        Foto principal da peça
+        <span class="camera-card">
+          <input id="mainProductImage" class="mobile-photo-input" type="file" name="image" accept="image/*" capture="environment" data-preview="#productPhotoPreview">
+          <span class="camera-card-title">📸 Tirar foto principal</span>
+          <small>Após escolher a foto, a IA tenta preencher automaticamente os campos vazios.</small>
+          <img id="productPhotoPreview" class="photo-preview" alt="Prévia da foto principal" hidden>
+        </span>
+      </label>
+      <label class="span-2 camera-field">
+        Fotos e vídeos complementares
+        <span class="camera-card">
+          <input class="mobile-media-input" type="file" name="media_files" accept="image/*,video/*" multiple data-preview-list="#productMediaPreview">
+          <span class="camera-card-title">📎 Adicionar várias fotos/vídeos</span>
+          <small>Use para detalhes da peça, etiqueta da marca, avarias, caimento, vídeo curto e material de pesquisa.</small>
+          <div id="productMediaPreview" class="media-preview-grid" aria-live="polite"></div>
+        </span>
+      </label>
+      <label class="span-2">
+        Observação dos arquivos
+        <textarea name="media_notes" placeholder="Ex.: vídeo do caimento, detalhe da alça, etiqueta da marca, pequena avaria na lateral..."></textarea>
+      </label>
+    </div>
+  </div>
+
+  <section class="ai-advice-panel">
+    <div>
+      <p class="eyebrow">IA antes de cadastrar</p>
+      <h3>Quer prever tendência e risco de estoque?</h3>
+      <p>A análise usa o histórico do BRECHORISEE, margem, atributos e palavras de tendência do arquivo <code>ai_config.json</code>.</p>
+    </div>
+    <button class="btn" id="draftAiBtn" type="button">Analisar peça</button>
+    <div id="draftAiResult" class="ai-result muted-box">Preencha alguns dados e clique em analisar.</div>
+  </section>
+
+  <div class="form-actions">
+    <a class="btn ghost" href="/products">Cancelar</a>
+    <button class="btn primary" type="submit">Salvar peça e gerar QR Code</button>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.querySelector("#productForm");
+  const codeInput = document.querySelector("#productCodeInput");
+  const autoCodeFlag = document.querySelector("#autoCodeFlag");
+  const codeHelp = document.querySelector("#codeHelp");
+  const generateCodeBtn = document.querySelector("#generateCodeBtn");
+  const mainImageInput = document.querySelector("#mainProductImage");
+  const aiBtn = document.querySelector("#aiAutofillBtn");
+  const aiApplyAllBtn = document.querySelector("#aiApplyAllBtn");
+  const aiBox = document.querySelector("#aiSuggestionBox");
+  const aiStatus = document.querySelector("#aiAutofillStatus");
+  const optionState = {{ (attribute_options or {})|tojson }};
+
+  let codeDebounce = null;
+  let aiDebounce = null;
+  let applyingAi = false;
+  let aiBusy = false;
+  let aiRequestSeq = 0;
+  let aiAbort = null;
+  let lastAiRunAt = 0;
+  let lastAiSuggestions = {};
+  let lastAiConfidence = {};
+  let hasRenderedSuggestions = false;
+  const MIN_AUTO_INTERVAL_MS = 2200;
+  const SAFE_AUTO_CONFIDENCE = 0.76;
+
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[<>&"]/g, c => ({
+      "<": "&lt;",
+      ">": "&gt;",
+      "&": "&amp;",
+      '"': "&quot;"
+    }[c]));
+  }
+
+  function field(name) {
+    return form.querySelector(`[name="${name}"]`);
+  }
+
+  function setStatus(text) {
+    if (aiStatus) aiStatus.textContent = text;
+  }
+
+  function setAiBusy(isBusy) {
+    aiBusy = isBusy;
+    if (aiBtn) {
+      aiBtn.disabled = isBusy;
+      aiBtn.textContent = isBusy ? "Analisando..." : "✨ Identificar agora";
+      aiBtn.setAttribute("aria-busy", isBusy ? "true" : "false");
+    }
+    if (aiApplyAllBtn) aiApplyAllBtn.disabled = isBusy || !Object.keys(lastAiSuggestions || {}).length;
+    if (aiBox) aiBox.classList.toggle("is-loading", isBusy);
+  }
+
+  function getValue(name) {
+    const el = field(name);
+    return el ? (el.value || "").trim() : "";
+  }
+
+  function markAi(el) {
+    if (!el) return;
+    el.dataset.aiFilled = "1";
+    el.classList.add("ai-filled-field");
+  }
+
+  function markManual(el) {
+    if (!el || applyingAi) return;
+    el.dataset.aiFilled = "0";
+    el.classList.remove("ai-filled-field");
+  }
+
+  function fillField(name, value, force = false) {
+    if (name === "color" && isPseudoColorValue(value)) {
+      const charEl = field("characteristics");
+      if (!charEl) return false;
+      const merged = mergeTextList(charEl.value, value);
+      if (!merged || merged === (charEl.value || "").trim()) return false;
+      applyingAi = true;
+      try {
+        charEl.value = merged;
+        markAi(charEl);
+        charEl.dispatchEvent(new Event("change", {bubbles: true}));
+      } finally {
+        applyingAi = false;
+      }
+      return true;
+    }
+    const el = field(name);
+    if (!el || value === undefined || value === null) return false;
+    const cleanValue = String(value).trim();
+    if (!cleanValue) return false;
+    const current = (el.value || "").trim();
+    const canReplace = force || !current || el.dataset.aiFilled === "1";
+    if (!canReplace) return false;
+    applyingAi = true;
+    try {
+      el.value = cleanValue;
+      markAi(el);
+      // Não dispara "input" aqui: o disparo antigo chamava a IA em cascata e fazia a tela piscar.
+      el.dispatchEvent(new Event("change", {bubbles: true}));
+    } finally {
+      applyingAi = false;
+    }
+    return true;
+  }
+
+  function shouldAutoApply(name, confidence) {
+    if (name === "code") return false;
+    if (!confidence || confidence < SAFE_AUTO_CONFIDENCE) return false;
+    const value = lastAiSuggestions?.[name] || "";
+    if (name === "condition" && getValue("condition")) return false;
+    if (name === "color" && isPseudoColorValue(value)) return false;
+    if (name === "title") {
+      const garment = lastAiSuggestions?.garment_type || getValue("garment_type");
+      // Título de uma palavra genérica ("Casaco", "Jaqueta") fica para conferência manual.
+      // Isso evita salvar "Casaco Casaco" ou "Jaqueta Jaqueta" por toque acidental.
+      if (isGenericTitleValue(value) || normalizeLocalText(value) === normalizeLocalText(garment)) return false;
+      if (confidence < 0.88) return false;
+    }
+    if ((name === "season" || name === "target_audience") && confidence < 0.78) return false;
+    return true;
+  }
+
+  function clearAutoCodeIfNoBasis() {
+    if (!codeInput || !autoCodeFlag) return;
+    const hasBasis = ["title","garment_type","brand","characteristics","style_tags"].some(name => getValue(name));
+    if (!hasBasis && autoCodeFlag.value !== "0") {
+      codeInput.value = "";
+      codeInput.dataset.autoFilled = "1";
+      autoCodeFlag.value = "1";
+      if (codeHelp) codeHelp.textContent = "Digite o nome ou tipo da peça para gerar um código confiável.";
+    }
+  }
+
+  function normalizeLocalText(value) {
+    return String(value || "")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+  }
+
+  const GENERIC_GARMENT_TITLES = new Set([
+    "vestido","calca","blusa","camisa","camiseta","saia","short","shorts","macacao",
+    "jaqueta","casaco","trico","bolsa","sapato","tenis","lenco","cinto","body","regata","top"
+  ]);
+  const PSEUDO_COLOR_VALUES = new Set(["estampado","estampa","floral","listrado","poa","poá","animal print","xadrez","colorido"]);
+
+  function isGenericTitleValue(value) {
+    return GENERIC_GARMENT_TITLES.has(normalizeLocalText(value));
+  }
+
+  function isPseudoColorValue(value) {
+    return PSEUDO_COLOR_VALUES.has(normalizeLocalText(value));
+  }
+
+  function mergeTextList(current, addition) {
+    const seen = new Set();
+    const out = [];
+    String(current || "").split(/[,;|]/).concat(String(addition || "").split(/[,;|]/)).forEach(item => {
+      const text = item.trim();
+      const key = normalizeLocalText(text);
+      if (!text || !key || seen.has(key) || ["e","a","o","de","da","do","ss","s"].includes(key)) return;
+      seen.add(key);
+      out.push(text);
+    });
+    return out.join(", ");
+  }
+
+  function inferLocalGarment(text) {
+    const clean = normalizeLocalText(text);
+    const rules = [
+      ["Vestido", ["vestido", "vest", "midi", "longo", "curto"]],
+      ["Calça", ["calca", "jeans", "pantalona", "legging"]],
+      ["Blusa", ["blusa", "cropped", "regata", "top"]],
+      ["Camisa", ["camisa", "social"]],
+      ["Camiseta", ["camiseta", "tshirt", "t-shirt"]],
+      ["Saia", ["saia"]],
+      ["Shorts", ["short", "shorts"]],
+      ["Macacão", ["macacao", "jardineira"]],
+      ["Jaqueta", ["jaqueta", "jacket", "bomber"]],
+      ["Casaco", ["casaco", "sobretudo", "blazer", "cardigan"]],
+      ["Tricô", ["trico", "tricot", "malha", "croche"]],
+      ["Bolsa", ["bolsa", "bag"]],
+      ["Sapato", ["sapato", "sandalia", "tenis", "bota", "chinelo"]],
+      ["Lenço", ["lenco", "echarpe"]],
+      ["Cinto", ["cinto"]]
+    ];
+    for (const [label, words] of rules) {
+      if (words.some(word => clean.includes(word))) return label;
+    }
+    return "";
+  }
+
+  function localAutofillPayload(reasonText = "Usei o modo seguro local porque a IA completa não respondeu.") {
+    const typed = ["title","category","garment_type","brand","color","characteristics","style_tags"]
+      .map(name => getValue(name)).join(" ");
+    const garment = getValue("garment_type") || inferLocalGarment(typed);
+    const suggestions = {};
+    const confidence = {};
+    const clean = normalizeLocalText(typed);
+
+    if (garment && !getValue("garment_type")) {
+      suggestions.garment_type = garment;
+      confidence.garment_type = 0.78;
+    }
+    if (garment && !getValue("title")) {
+      suggestions.title = garment;
+      confidence.title = 0.76;
+    }
+    const chars = [];
+    if (clean.includes("floral")) chars.push("floral");
+    if (clean.includes("jeans")) chars.push("jeans");
+    if (clean.includes("renda")) chars.push("renda");
+    if (clean.includes("listr")) chars.push("listrado");
+    if (clean.includes("poa") || clean.includes("bolinha")) chars.push("poá");
+    if (chars.length && !getValue("characteristics")) {
+      suggestions.characteristics = chars.join(", ");
+      confidence.characteristics = 0.76;
+    }
+    if (garment && !getValue("category")) {
+      suggestions.category = ["Bolsa","Sapato","Lenço","Cinto"].includes(garment) ? "Acessórios" : "Feminino";
+      confidence.category = 0.68;
+    }
+    if (garment && !getValue("condition")) {
+      suggestions.condition = "Seminovo";
+      confidence.condition = 0.55;
+    }
+
+    if (!Object.keys(suggestions).length) return null;
+    return {
+      suggestions,
+      confidence,
+      auto_apply: Object.fromEntries(Object.keys(suggestions).map(k => [k, confidence[k] >= SAFE_AUTO_CONFIDENCE && !["code","condition"].includes(k)])),
+      reasons: [reasonText, "Revise antes de salvar. Para mais exatidão, digite o nome ou tipo da peça junto com a foto."],
+      similar: [],
+      fallback: true
+    };
+  }
+
+  function applySafeSuggestions() {
+    let applied = 0;
+    Object.entries(lastAiSuggestions || {}).forEach(([name, value]) => {
+      const confidence = Number(lastAiConfidence?.[name] || 0);
+      if (shouldAutoApply(name, confidence) && fillField(name, value, false)) applied += 1;
+    });
+    return applied;
+  }
+
+  function renderSuggestions(payload) {
+    lastAiSuggestions = payload?.suggestions || {};
+    lastAiConfidence = payload?.confidence || {};
+    const reasons = payload?.reasons || [];
+    const similar = payload?.similar || [];
+    const entries = Object.entries(lastAiSuggestions).filter(([name]) => name !== "code");
+    hasRenderedSuggestions = entries.length > 0;
+
+    if (!entries.length) {
+      aiBox.textContent = "Não encontrei sugestão segura. Digite o nome da peça ou tire uma foto mais centralizada, com boa luz e fundo simples.";
+      if (aiApplyAllBtn) aiApplyAllBtn.disabled = true;
+      return;
+    }
+
+    const labels = {
+      title: "Nome",
+      category: "Categoria",
+      garment_type: "Tipo",
+      size: "Tamanho",
+      brand: "Marca",
+      color: "Cor",
+      condition: "Estado",
+      measurements: "Medidas",
+      characteristics: "Características",
+      style_tags: "Tags",
+      season: "Ocasião",
+      target_audience: "Público"
+    };
+
+    aiBox.innerHTML = `
+      <div class="ai-suggestion-chips">
+        ${entries.map(([name, value]) => {
+          const pct = Math.round((Number(lastAiConfidence[name] || 0.6)) * 100);
+          const weak = pct < 70 ? " sugestao-fraca" : "";
+          return `
+            <button type="button" class="ai-chip${weak}" data-fill-field="${escapeHtml(name)}">
+              <b>${labels[name] || escapeHtml(name)}:</b> ${escapeHtml(value)}
+              <small>${pct}%</small>
+            </button>
+          `;
+        }).join("")}
+      </div>
+      ${reasons.length ? `<ul class="ai-reasons">${reasons.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+      ${similar.length ? `<p class="muted"><b>Base usada:</b> ${similar.map(item => `${escapeHtml(item.code || "")} ${escapeHtml(item.title || "")} (${escapeHtml(item.match_score || 0)}%)`).join(", ")}</p>` : ""}
+      <p class="muted">Toque em uma sugestão para aplicar somente ela. Use “Aplicar tudo” apenas depois de conferir.</p>
+    `;
+
+    aiBox.querySelectorAll("[data-fill-field]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        fillField(btn.dataset.fillField, lastAiSuggestions[btn.dataset.fillField], true);
+        refreshSmartCode(true);
+      });
+    });
+    if (aiApplyAllBtn) aiApplyAllBtn.disabled = false;
+  }
+
+  async function refreshSmartCode(force = false) {
+    if (!codeInput || !autoCodeFlag) return;
+    if (!force && autoCodeFlag.value === "0") return;
+    const params = new URLSearchParams();
+    ["title","category","garment_type","brand","color","characteristics","style_tags"].forEach(name => {
+      params.set(name, getValue(name));
+    });
+    try {
+      const res = await fetch(`/api/generate-product-code?${params.toString()}`, {headers: {"Accept": "application/json"}});
+      const data = await res.json();
+      if (data.ok && data.code) {
+        codeInput.value = data.code;
+        codeInput.dataset.autoFilled = "1";
+        autoCodeFlag.value = "1";
+        if (codeHelp) codeHelp.textContent = `Código sugerido: ${data.code} • ${data.format}`;
+      } else if (codeHelp && data.message) {
+        if (autoCodeFlag.value !== "0") codeInput.value = "";
+        codeHelp.textContent = data.message;
+      }
+    } catch (err) {
+      if (codeHelp) codeHelp.textContent = "Não foi possível atualizar o código agora. O sistema gera ao salvar.";
+    }
+  }
+
+  async function runAutofill(force = false, options = {}) {
+    const autoApply = Boolean(options.autoApply);
+    const source = options.source || "manual";
+    const hasText = ["title","category","garment_type","brand","color","characteristics","style_tags"].some(name => getValue(name));
+    const imageFile = mainImageInput && mainImageInput.files && mainImageInput.files[0] ? mainImageInput.files[0] : null;
+
+    if (!hasText && !imageFile) {
+      clearAutoCodeIfNoBasis();
+      setStatus("Tire uma foto ou digite o nome da peça para a IA identificar.");
+      return;
+    }
+
+    if (!hasText) clearAutoCodeIfNoBasis();
+
+    const now = Date.now();
+    if (!force && now - lastAiRunAt < MIN_AUTO_INTERVAL_MS) return;
+    if (aiBusy) {
+      if (!force) return;
+      try { if (aiAbort) aiAbort.abort(); } catch (err) {}
+    }
+
+    lastAiRunAt = now;
+    const seq = ++aiRequestSeq;
+    aiAbort = new AbortController();
+    setAiBusy(true);
+    setStatus(source === "foto" ? "Analisando a foto da peça..." : "Analisando peça...");
+
+    if (!hasRenderedSuggestions) {
+      aiBox.textContent = "IA analisando foto, nome e histórico da loja...";
+    } else {
+      aiBox.insertAdjacentHTML("afterbegin", `<div class="ai-inline-loading">Atualizando sugestões...</div>`);
+    }
+
+    const fd = new FormData();
+    ["title","category","garment_type","brand","color","characteristics","style_tags"].forEach(name => fd.append(name, getValue(name)));
+    if (imageFile) fd.append("image", imageFile, imageFile.name || "peca.jpg");
+
+    try {
+      const res = await fetch("/api/product-autofill", {
+        method: "POST",
+        body: fd,
+        signal: aiAbort.signal,
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: {"Accept": "application/json"}
+      });
+      const rawText = await res.text();
+      let data = null;
+      try {
+        data = rawText ? JSON.parse(rawText) : null;
+      } catch (parseErr) {
+        data = null;
+      }
+      if (seq !== aiRequestSeq) return;
+
+      if (res.status === 401) {
+        setStatus("Sessão administrativa expirada. Entre novamente para usar a IA.");
+        aiBox.innerHTML = `<p>Sessão expirada ou cookie não enviado pelo app.</p><p><a class="btn primary" href="/admin-acesso?next=/products/new">Entrar novamente</a></p>`;
+        return;
+      }
+
+      if (!res.ok || !data || !data.ok) {
+        const msg = data?.message || "A IA completa não respondeu. Usando modo local seguro.";
+        const fallback = localAutofillPayload(msg);
+        if (fallback) {
+          renderSuggestions(fallback);
+          const appliedFallback = autoApply ? applySafeSuggestions() : 0;
+          setStatus(appliedFallback ? `${appliedFallback} sugestão(ões) local(is) aplicada(s). Revise antes de salvar.` : "Usei sugestões locais. Revise e toque para aplicar.");
+          refreshSmartCode(true);
+        } else {
+          setStatus(msg);
+          aiBox.textContent = msg + " Digite pelo menos o nome ou tipo da peça para continuar.";
+        }
+        return;
+      }
+
+      renderSuggestions(data.ai);
+      const applied = autoApply ? applySafeSuggestions() : 0;
+      if (applied > 0) {
+        setStatus(`${applied} sugestão(ões) segura(s) aplicada(s). Revise antes de salvar.`);
+        refreshSmartCode(true);
+      } else {
+        setStatus("Sugestões encontradas. Revise e toque para aplicar.");
+      }
+      if (data.options) updateOptionState(data.options);
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        const fallback = localAutofillPayload("Não consegui conectar ao servidor da IA. Usei o modo local seguro.");
+        if (fallback) {
+          renderSuggestions(fallback);
+          const appliedFallback = autoApply ? applySafeSuggestions() : 0;
+          setStatus(appliedFallback ? `${appliedFallback} sugestão(ões) local(is) aplicada(s). Revise antes de salvar.` : "IA completa indisponível. Sugestões locais prontas para conferência.");
+          refreshSmartCode(true);
+        } else {
+          clearAutoCodeIfNoBasis();
+          setStatus("Não consegui conectar à IA. Digite o nome ou tipo da peça e tente novamente.");
+          aiBox.textContent = "Não consegui conectar à IA de cadastro. O cadastro manual continua funcionando.";
+        }
+      }
+    } finally {
+      if (seq === aiRequestSeq) setAiBusy(false);
+    }
+  }
+
+  function scheduleImageAutofill() {
+    clearTimeout(aiDebounce);
+    aiDebounce = setTimeout(() => runAutofill(false, {source: "foto", autoApply: false}), 500);
+  }
+
+  function updateOptionState(options) {
+    Object.entries(options || {}).forEach(([fieldName, values]) => {
+      optionState[fieldName] = values || [];
+      const id = "dl-" + fieldName.replaceAll("_", "-");
+      const dl = document.getElementById(id);
+      if (dl) {
+        dl.innerHTML = (values || []).map(v => `<option value="${escapeHtml(v)}">`).join("");
+      }
+    });
+  }
+
+  async function saveOptionFromInput(el) {
+    const fieldName = el.dataset.optionField;
+    const raw = (el.value || "").trim();
+    if (!fieldName || !raw) return;
+    const known = new Set((optionState[fieldName] || []).map(v => String(v).toLowerCase()));
+    const parts = raw.split(/[,;|]/).map(v => v.trim()).filter(Boolean);
+    for (const value of parts) {
+      if (known.has(value.toLowerCase())) continue;
+      try {
+        const res = await fetch("/api/product-attribute-options", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({field_name: fieldName, value})
+        });
+        const data = await res.json();
+        if (data.ok && data.options) updateOptionState(data.options);
+      } catch (err) {}
+    }
+  }
+
+  if (codeInput) {
+    codeInput.addEventListener("input", () => {
+      autoCodeFlag.value = "0";
+      codeInput.dataset.autoFilled = "0";
+      if (codeHelp) codeHelp.textContent = "Código manual ativado. Clique em gerar para voltar ao automático.";
+      markManual(codeInput);
+    });
+  }
+
+  form.querySelectorAll("[data-ai-field]").forEach(el => {
+    el.addEventListener("input", () => markManual(el));
+  });
+
+  form.querySelectorAll("[data-option-field]").forEach(el => {
+    el.addEventListener("change", () => saveOptionFromInput(el));
+    el.addEventListener("blur", () => saveOptionFromInput(el));
+  });
+
+  ["title","category","garment_type","brand","color","characteristics","style_tags"].forEach(name => {
+    const el = field(name);
+    if (!el) return;
+    el.addEventListener("input", () => {
+      clearTimeout(codeDebounce);
+      codeDebounce = setTimeout(() => refreshSmartCode(false), 450);
+      // A IA não é mais chamada a cada tecla: isso era a causa principal da piscada.
+      if (hasRenderedSuggestions) setStatus("Dados alterados manualmente. Clique em Identificar agora para recalcular.");
+    });
+  });
+
+  if (generateCodeBtn) generateCodeBtn.addEventListener("click", () => refreshSmartCode(true));
+  if (aiBtn) aiBtn.addEventListener("click", () => runAutofill(true, {source: "manual", autoApply: true}));
+  if (aiApplyAllBtn) {
+    aiApplyAllBtn.disabled = true;
+    aiApplyAllBtn.addEventListener("click", () => {
+      const applied = applySafeSuggestions();
+      refreshSmartCode(true);
+      setStatus(applied ? "Sugestões seguras aplicadas. Sugestões fracas continuam para toque manual." : "Nenhuma sugestão segura para aplicar automaticamente. Toque em uma sugestão específica se quiser usá-la.");
+    });
+  }
+
+  if (mainImageInput) {
+    mainImageInput.addEventListener("change", () => {
+      const file = mainImageInput.files && mainImageInput.files[0];
+      const preview = document.querySelector("#productPhotoPreview");
+      if (file && preview) {
+        preview.src = URL.createObjectURL(file);
+        preview.hidden = false;
+        setStatus("Foto carregada. Analisando uma vez, sem piscar.");
+        scheduleImageAutofill();
+      }
+    });
+  }
+
+  clearAutoCodeIfNoBasis();
+  refreshSmartCode(false);
+
+  const btn = document.querySelector("#draftAiBtn");
+  const box = document.querySelector("#draftAiResult");
+  if (btn && box) {
+    btn.addEventListener("click", async () => {
+      const params = new URLSearchParams();
+      ["title","category","garment_type","size","brand","color","condition","characteristics","style_tags","season","target_audience","cost_price","sale_price"].forEach(name => {
+        params.set(name, getValue(name));
+      });
+      box.textContent = "Analisando...";
+      try {
+        const res = await fetch(`/api/product-advice?${params.toString()}`);
+        const data = await res.json();
+        if (!data.ok) {
+          box.textContent = data.message || "Não foi possível analisar.";
+          return;
+        }
+        const ai = data.ai;
+        box.innerHTML = `
+          <div class="ai-score-row">
+            <strong>${ai.score}%</strong>
+            <span>${escapeHtml(ai.label)}</span>
+          </div>
+          <p><b>Tempo previsto agora:</b> peça nova no estoque. <b>Margem:</b> ${escapeHtml(ai.margin_pct)}%.</p>
+          <ul>${(ai.reasons || []).map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+          <p><b>Ações sugeridas:</b> ${(ai.actions || []).map(escapeHtml).join(" ")}</p>
+        `;
+      } catch (err) {
+        box.textContent = "Erro na análise.";
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

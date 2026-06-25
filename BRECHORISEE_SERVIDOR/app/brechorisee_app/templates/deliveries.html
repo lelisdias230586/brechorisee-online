@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block page_title %}Entregas{% endblock %}
+{% block content %}
+<style>
+.admin-tracking-card{margin:14px 0;padding:14px;border-radius:24px;background:linear-gradient(135deg,#fff8f4,#f5e5dd);border:1px solid #eadfd8}
+.admin-tracking-map{height:150px;border-radius:20px;position:relative;overflow:hidden;background:linear-gradient(135deg,#dff3e8,#eef4ff);border:1px solid rgba(80,115,92,.18);margin:10px 0}
+.admin-tracking-map:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.65) 0 2px,transparent 2px 56px),repeating-linear-gradient(0deg,rgba(255,255,255,.75) 0 2px,transparent 2px 48px);opacity:.82}
+.admin-road{position:absolute;left:12%;right:12%;top:54%;height:7px;border-radius:999px;background:rgba(31,23,20,.18)}
+.admin-road span{display:block;height:100%;width:var(--progress,30%);border-radius:999px;background:linear-gradient(90deg,#ad503d,#1f1714)}
+.admin-pin{position:absolute;width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 10px 25px rgba(0,0,0,.22)}
+.admin-pin:after{content:"";position:absolute;width:11px;height:11px;border-radius:50%;background:#fff;left:9px;top:9px}
+.admin-pin.store{left:10%;top:45%;background:#1f1714}.admin-pin.client{right:10%;top:23%;background:#ad503d}
+.admin-truck{position:absolute;left:calc(12% + (var(--progress,30%) * .72));top:39%;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#fff;box-shadow:0 12px 30px rgba(0,0,0,.20);font-size:20px}
+.admin-track-meta{display:flex;gap:8px;flex-wrap:wrap}.admin-track-meta span{padding:7px 10px;border-radius:999px;background:#fff;color:#734033;font-weight:700;font-size:.85rem}
+.admin-track-form{display:grid;grid-template-columns:120px 1fr 1fr auto;gap:8px;align-items:end;margin-top:10px}
+.admin-track-form input{min-width:0}
+@media(max-width:820px){.admin-track-form{grid-template-columns:1fr}.admin-tracking-map{height:130px}}
+</style>
+<section class="hero-panel compact-hero">
+  <div>
+    <p class="eyebrow">Entregas sincronizadas</p>
+    <h1>Entregas pós-venda</h1>
+    <p>Controle as vendas que precisam ser entregues, abra a rota no Google Maps ou Waze e marque o que já foi entregue.</p>
+  </div>
+  <div class="feature-stack">
+    <span>📍 Google Maps e Waze</span>
+    <span>📦 Peças pendentes e entregues</span>
+    <span>🧾 Vinculado à venda</span>
+  </div>
+</section>
+
+<section class="stats-grid delivery-stats">
+  <article class="stat-card"><span>Pendentes</span><strong>{{ summary.pendente }}</strong><small>Aguardando entrega</small></article>
+  <article class="stat-card"><span>Separadas</span><strong>{{ summary.separado }}</strong><small>Prontas para sair</small></article>
+  <article class="stat-card"><span>Em rota</span><strong>{{ summary.rota }}</strong><small>Na rua</small></article>
+  <article class="stat-card"><span>Cliente ausente</span><strong>{{ summary.cliente_ausente }}</strong><small>Tentar novamente</small></article>
+  <article class="stat-card glow"><span>Entregues</span><strong>{{ summary.entregue }}</strong><small>Concluídas</small></article>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Nova entrega</p>
+      <h2>Criar entrega a partir de uma venda</h2>
+      <p class="hint">Após finalizar a venda, selecione a venda aqui ou abra a venda em Vendas para programar a entrega.</p>
+    </div>
+  </div>
+  <form method="post" action="/deliveries/create" class="delivery-form">
+    <label>
+      Venda
+      <select name="sale_id" required>
+        {% for sale in recent_sales %}
+          <option value="{{ sale.id }}">{{ sale.sale_code }} • {{ sale.customer or 'Cliente balcão' }} • {{ sale.total|money }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Cliente <input name="customer_name" placeholder="Nome da cliente"></label>
+    <label>Telefone/WhatsApp <input name="phone" inputmode="tel" placeholder="(00) 00000-0000"></label>
+    <label>Endereço <input name="address" placeholder="Rua, número, bairro"></label>
+    <label>Cidade/complemento <input name="city" placeholder="Cidade, referência ou complemento"></label>
+    <label>Link do Google Maps <input name="delivery_maps_url" placeholder="https://maps.google.com/..."></label>
+    <label>Latitude <input name="delivery_lat" placeholder="-23.0000000"></label>
+    <label>Longitude <input name="delivery_lng" placeholder="-46.0000000"></label>
+    <label>Previsão inicial <input name="delivery_eta_minutes" type="number" min="5" max="180" value="35"></label>
+    <label>Data combinada <input name="scheduled_at" type="datetime-local"></label>
+    <label>Observações <textarea name="route_notes" placeholder="Ex.: entregar após 18h, portaria, retirar na loja..."></textarea></label>
+    <button class="btn primary" type="submit">Criar entrega</button>
+  </form>
+</section>
+
+<section class="panel">
+  <form class="search-row" method="get" action="/deliveries">
+    <input name="q" value="{{ q }}" placeholder="Pesquisar cliente, telefone, endereço ou venda">
+    <select name="status">
+      <option value="todos" {{ 'selected' if status == 'todos' else '' }}>Todos</option>
+      <option value="pendente" {{ 'selected' if status == 'pendente' else '' }}>Pendentes</option>
+      <option value="separado" {{ 'selected' if status == 'separado' else '' }}>Separadas</option>
+      <option value="rota" {{ 'selected' if status == 'rota' else '' }}>Em rota</option>
+      <option value="cliente_ausente" {{ 'selected' if status == 'cliente_ausente' else '' }}>Cliente ausente</option>
+      <option value="entregue" {{ 'selected' if status == 'entregue' else '' }}>Entregues</option>
+      <option value="cancelada" {{ 'selected' if status == 'cancelada' else '' }}>Canceladas</option>
+    </select>
+    <button class="btn primary" type="submit">Filtrar</button>
+    <a class="btn ghost" href="/deliveries">Limpar</a>
+  </form>
+</section>
+
+<section class="delivery-grid">
+  {% for d in deliveries %}
+  <article class="panel delivery-card">
+    <div class="delivery-card-head">
+      <div>
+        <p class="eyebrow">{{ d.sale_code }}</p>
+        <h2>{{ d.customer_name or 'Cliente sem nome' }}</h2>
+        <p class="hint">{{ d.phone or 'Sem telefone' }} • {{ d.total|money }}</p>
+      </div>
+      <span class="pill {{ d.status }}">{{ d.status_label }}</span>
+    </div>
+
+    <div class="text-block">
+      <h3>Endereço</h3>
+      <p>{{ d.address or '-' }} {{ d.city or '' }}</p>
+      {% if d.scheduled_at %}<p class="hint">Combinado para: {{ d.scheduled_at }}</p>{% endif %}
+      {% if d.route_notes %}<p class="hint">{{ d.route_notes }}</p>{% endif %}
+    </div>
+
+    <div class="admin-tracking-card" style="--progress:{{ d.tracking.progress }}%;">
+      <p class="eyebrow">Aproximação da entrega</p>
+      <h3>{{ d.tracking.stage }}</h3>
+      <p class="hint">{{ d.tracking.message }}</p>
+      <div class="admin-tracking-map" aria-label="Aproximação visual">
+        <span class="admin-road"><span></span></span>
+        <span class="admin-pin store"></span>
+        <span class="admin-truck">🚚</span>
+        <span class="admin-pin client"></span>
+      </div>
+      <div class="admin-track-meta">
+        <span>{{ d.tracking.eta }}</span>
+        {% if d.tracking.updated_at %}<span>Atualizado: {{ d.tracking.updated_at }}</span>{% endif %}
+      </div>
+      <form method="post" action="/deliveries/{{ d.id }}/tracking" class="admin-track-form">
+        <label>Minutos
+          <input name="delivery_eta_minutes" type="number" min="5" max="180" value="{{ d.tracking.eta_minutes }}">
+        </label>
+        <label>Local atual do entregador
+          <input name="courier_maps_url" placeholder="Cole o link do Maps do entregador">
+        </label>
+        <label>Mensagem rápida
+          <input name="route_notes" placeholder="Ex.: chegando no bairro, saiu para entrega...">
+        </label>
+        <button class="btn primary" type="submit">Atualizar aproximação</button>
+      </form>
+    </div>
+
+    <div class="inline-actions">
+      {% if d.maps.google_maps %}<a class="btn primary" href="{{ d.maps.google_maps }}" target="_blank">Abrir Google Maps</a>{% endif %}
+      {% if d.maps.waze %}<a class="btn" href="{{ d.maps.waze }}" target="_blank">Abrir Waze</a>{% endif %}
+      <a class="btn ghost" href="/sales/{{ d.sale_id }}">Ver venda</a>
+    </div>
+
+    <form method="post" action="/deliveries/{{ d.id }}/status" class="inline-form">
+      <select name="status">
+        <option value="pendente" {{ 'selected' if d.status == 'pendente' else '' }}>Pendente</option>
+        <option value="separado" {{ 'selected' if d.status == 'separado' else '' }}>Separado</option>
+        <option value="rota" {{ 'selected' if d.status == 'rota' else '' }}>Em rota</option>
+        <option value="cliente_ausente" {{ 'selected' if d.status == 'cliente_ausente' else '' }}>Cliente ausente</option>
+        <option value="entregue" {{ 'selected' if d.status == 'entregue' else '' }}>Entregue</option>
+        <option value="cancelada" {{ 'selected' if d.status == 'cancelada' else '' }}>Cancelada</option>
+      </select>
+      <input name="route_notes" placeholder="Observação rápida">
+      <input name="delivery_eta_minutes" type="number" min="5" max="180" value="{{ d.tracking.eta_minutes }}" title="Previsão em minutos">
+      <button class="btn primary" type="submit">Salvar status</button>
+    </form>
+
+    <div class="delivery-items">
+      <h3>Peças da entrega</h3>
+      {% for item in d.items %}
+      <div class="delivery-item">
+        {% if item.image_filename %}
+          <img src="{{ url_for('static', path='/uploads/' ~ item.image_filename) }}" alt="{{ item.title }}">
+        {% else %}
+          <span class="mini-placeholder">sem foto</span>
+        {% endif %}
+        <div>
+          <strong>{{ item.title }}</strong>
+          <small>{{ item.code }} • {{ item.size or '-' }} • {{ item.color or '-' }} • {{ item.status }}</small>
+        </div>
+        <form method="post" action="/deliveries/{{ d.id }}/item/{{ item.product_id }}/status">
+          <select name="status">
+            <option value="pendente" {{ 'selected' if item.status == 'pendente' else '' }}>Pendente</option>
+            <option value="separado" {{ 'selected' if item.status == 'separado' else '' }}>Separado</option>
+            <option value="rota" {{ 'selected' if item.status == 'rota' else '' }}>Rota</option>
+            <option value="cliente_ausente" {{ 'selected' if item.status == 'cliente_ausente' else '' }}>Cliente ausente</option>
+            <option value="entregue" {{ 'selected' if item.status == 'entregue' else '' }}>Entregue</option>
+          </select>
+          <button class="btn ghost" type="submit">OK</button>
+        </form>
+      </div>
+      {% else %}
+        <p class="hint">Nenhuma peça vinculada.</p>
+      {% endfor %}
+    </div>
+  </article>
+  {% else %}
+    <div class="empty-state">
+      <h3>Nenhuma entrega encontrada.</h3>
+      <p>Crie uma entrega a partir de uma venda finalizada.</p>
+    </div>
+  {% endfor %}
+</section>
+{% endblock %}

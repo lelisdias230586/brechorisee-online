@@ -1,0 +1,86 @@
+{% extends "public_store_base.html" %}
+{% block store_content %}
+<section class="store-hero-modern customer-access-hero">
+  <div class="hero-copy">
+    <p class="eyebrow">Área exclusiva da cliente</p>
+    <h1>{% if mode == 'register' %}Crie seu acesso em poucos segundos.{% elif mode == 'reset' %}Crie ou altere sua senha.{% else %}Entre para abrir sua área da cliente. A live só abre quando você tocar em Entrar na live.{% endif %}</h1>
+    <p>Esta área mostra peças disponíveis, sugestões de acordo com seu perfil, pedidos e uma compra self-service com acesso somente à vitrine e aos pedidos.</p>
+  </div>
+  <div class="hero-card">
+    <strong>Segurança</strong>
+    <span>Cliente acessa somente a vitrine e seus pedidos.</span>
+    <small></small>
+  </div>
+</section>
+
+<section class="auth-card-wrap">
+  <article class="panel auth-card">
+    {% if error %}<div class="alert danger">{{ error }}</div>{% endif %}
+    {% if mode == 'register' %}
+      <p class="eyebrow">Primeiro acesso</p>
+      <h2>Criar senha da cliente</h2>
+      <form method="post" action="/cliente/cadastrar" class="stack-form">
+        <input type="hidden" name="next" value="{{ next or '/cliente/inicio' }}">
+        <label>Nome
+          <input name="name" required autocomplete="name" placeholder="Seu nome" value="{{ prefill.name if prefill is defined else '' }}">
+        </label>
+        <label>WhatsApp
+          <input name="phone" required inputmode="tel" autocomplete="tel" placeholder="DDD + número" value="{{ prefill.phone if prefill is defined else '' }}">
+        </label>
+        <label>E-mail opcional
+          <input name="email" type="email" autocomplete="email" placeholder="email@exemplo.com" value="{{ prefill.email if prefill is defined else '' }}">
+        </label>
+        <label>Instagram opcional
+          <input name="instagram" autocomplete="off" placeholder="@seuinstagram" value="{{ prefill.instagram if prefill is defined else '' }}">
+        </label>
+        <label>Estilo e peças preferidas
+          <textarea name="style_preferences" rows="3" placeholder="Ex.: vestidos, bolsas, jeans, tamanho M, preto, floral...">{{ prefill.style_preferences if prefill is defined else '' }}</textarea>
+        </label>
+        <label>Senha
+          <input name="password" type="password" required autocomplete="new-password" placeholder="Crie uma senha">
+        </label>
+        <button class="btn primary wide" type="submit">Criar acesso e ir para minha área</button>
+      </form>
+      <p class="hint center">Já tenho senha. <a href="/cliente?next={{ next or '/cliente/inicio' }}">Entrar na área da cliente</a></p>
+    {% elif mode == 'reset' %}
+      <p class="eyebrow">Senha da cliente</p>
+      <h2>Criar ou alterar senha</h2>
+      <form method="post" action="/cliente/redefinir-senha" class="stack-form">
+        <input type="hidden" name="next" value="{{ next or '/cliente/inicio' }}">
+        <label>Nome cadastrado
+          <input name="name" required autocomplete="name" placeholder="Seu nome" value="{{ prefill.name if prefill is defined else '' }}">
+        </label>
+        <label>WhatsApp
+          <input name="phone" required inputmode="tel" autocomplete="tel" placeholder="DDD + número" value="{{ prefill.phone if prefill is defined else '' }}">
+        </label>
+        <label>E-mail opcional
+          <input name="email" type="email" autocomplete="email" placeholder="email@exemplo.com" value="{{ prefill.email if prefill is defined else '' }}">
+        </label>
+        <label>Nova senha
+          <input name="password" type="password" required autocomplete="new-password" placeholder="Nova senha">
+        </label>
+        <label>Confirmar nova senha
+          <input name="password_confirm" type="password" autocomplete="new-password" placeholder="Repita a senha">
+        </label>
+        <button class="btn primary wide" type="submit">Salvar senha e ir para minha área</button>
+      </form>
+      <p class="hint center">Lembrou a senha? <a href="/cliente?next={{ next or '/cliente/inicio' }}">Entrar</a></p>
+    {% else %}
+      <p class="eyebrow">Cliente BRECHORISEE</p>
+      <h2>Entrar</h2>
+      <form method="post" action="/cliente/login" class="stack-form">
+        <input type="hidden" name="next" value="{{ next or '/cliente/inicio' }}">
+        <label>WhatsApp
+          <input name="phone" required inputmode="tel" autocomplete="tel" placeholder="DDD + número">
+        </label>
+        <label>Senha
+          <input name="password" type="password" required autocomplete="current-password" placeholder="Sua senha">
+        </label>
+        <button class="btn primary wide" type="submit">Entrar na minha área</button>
+      </form>
+      <p class="hint center">Primeiro acesso? <a href="/cliente/cadastrar?next={{ next or '/cliente/inicio' }}">Criar minha senha</a></p>
+      <p class="hint center"><a href="/cliente/redefinir-senha?next={{ next or '/cliente/inicio' }}">Alterar ou recuperar senha</a></p>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}

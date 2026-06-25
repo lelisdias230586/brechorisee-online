@@ -1,0 +1,74 @@
+plugins {
+    id 'com.android.application'
+}
+
+import java.util.Properties
+
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+def releaseStoreFile = keystoreProperties.getProperty("storeFile", System.getenv("BRECHORISEE_UPLOAD_STORE_FILE") ?: "")
+def releaseStorePassword = keystoreProperties.getProperty("storePassword", System.getenv("BRECHORISEE_UPLOAD_STORE_PASSWORD") ?: "")
+def releaseKeyAlias = keystoreProperties.getProperty("keyAlias", System.getenv("BRECHORISEE_UPLOAD_KEY_ALIAS") ?: "brechorisee_upload")
+def releaseKeyPassword = keystoreProperties.getProperty("keyPassword", System.getenv("BRECHORISEE_UPLOAD_KEY_PASSWORD") ?: "")
+
+def releaseStoreFileResolved = null
+if (releaseStoreFile != null && releaseStoreFile.trim() != "") {
+    def rawStoreFile = releaseStoreFile.trim()
+    def rawFile = new File(rawStoreFile)
+    releaseStoreFileResolved = rawFile.isAbsolute() ? rawFile : rootProject.file(rawStoreFile)
+}
+
+def hasReleaseSigning = releaseStoreFileResolved != null && releaseStoreFileResolved.exists() &&
+        releaseStorePassword != null && releaseStorePassword.trim() != "" &&
+        releaseKeyPassword != null && releaseKeyPassword.trim() != ""
+
+android {
+    namespace 'com.brechorisee.cliente'
+    compileSdk 35
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    defaultConfig {
+        applicationId 'com.brechorisee.cliente'
+        minSdk 23
+        targetSdk 35
+        versionCode 15
+        versionName '4.8.12-completo-windows-cliente'
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile releaseStoreFileResolved
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix ""
+            debuggable true
+        }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+}

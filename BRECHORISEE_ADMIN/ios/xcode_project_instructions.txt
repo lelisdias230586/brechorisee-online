@@ -1,0 +1,12 @@
+COMO CRIAR O PROJETO NO XCODE
+
+1. Abra Xcode no Mac.
+2. File > New > Project > iOS > App.
+3. Product Name: BRECHORISEE Admin
+4. Bundle Identifier: com.brechorisee.admin
+5. Interface: SwiftUI
+6. Language: Swift
+7. Copie os arquivos da pasta Sources para o projeto.
+8. Copie as permissões do Info.plist.
+9. Configure Signing & Capabilities com sua conta Apple Developer.
+10. Build/Archive para TestFlight/App Store.

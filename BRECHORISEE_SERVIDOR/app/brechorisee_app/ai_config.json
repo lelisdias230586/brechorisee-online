@@ -1,0 +1,33 @@
+{
+  "trend_keywords": [
+    "alfaiataria",
+    "linho",
+    "jeans",
+    "wide leg",
+    "cropped",
+    "básica",
+    "vintage",
+    "oversized",
+    "couro",
+    "satinado",
+    "renda",
+    "metalizado",
+    "floral",
+    "midi",
+    "camisa",
+    "calça reta"
+  ],
+  "attention_keywords": [
+    "avaria",
+    "mancha",
+    "bolinha",
+    "desbotado",
+    "rasgo",
+    "ajuste",
+    "defeito",
+    "muito usado"
+  ],
+  "slow_stock_days": 90,
+  "old_stock_days": 180,
+  "_observacao": "Edite estas palavras para adaptar a IA às tendências e aos alertas do brechorisee. Esta versão não consulta a internet."
+}

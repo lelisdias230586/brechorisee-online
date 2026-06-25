@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block page_title %}Live Instagram / Controle{% endblock %}
+{% block content %}
+<style>
+.instagram-mode-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}.instagram-hero{background:linear-gradient(135deg,#2a151f,#7b3d32);color:#fff;border-radius:28px;padding:22px;overflow:hidden;position:relative}.instagram-hero:after{content:"";position:absolute;right:-80px;top:-80px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.10)}.instagram-badge{display:inline-flex;align-items:center;gap:8px;background:#ff1c74;color:#fff;border-radius:999px;padding:8px 14px;font-weight:800}.choice-card{padding:16px;border:1px solid #eadfd8;border-radius:22px;background:#fff}.choice-card strong{display:block;margin-bottom:6px}.copy-box{width:100%;min-height:110px}.reference-strip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.reference-tile{display:flex;gap:10px;align-items:center;padding:10px;background:#faf6f3;border-radius:18px}.reference-tile img{width:64px;height:64px;border-radius:14px;object-fit:cover}.mode-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}.mode-actions .btn{width:100%;justify-content:center}@media(max-width:980px){.instagram-mode-grid,.reference-strip,.mode-actions{grid-template-columns:1fr}}
+</style>
+
+<section class="instagram-mode-grid">
+  <section class="instagram-hero">
+    <p class="eyebrow" style="color:#fff;opacity:.8;">Modo auxiliar</p>
+    <h2>Live no Instagram + BRECHORISEE vendendo por trás</h2>
+    <p>Use o Instagram como palco e o BRECHORISEE como cérebro da venda: reconhecimento de peça, cards, links, respostas prontas, repescagem, clipes e marcação de vendidas.</p>
+    <p><span class="instagram-badge">AO VIVO / INSTAGRAM</span></p>
+    <div class="mode-actions">
+      <a class="btn primary" href="/live/studio/{{ session.id }}">Abrir câmera/reconhecimento</a>
+      {% if session.instagram_live_url %}<a class="btn ghost" href="{{ session.instagram_live_url }}" target="_blank">Abrir Instagram</a>{% endif %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-head no-margin">
+      <div>
+        <p class="eyebrow">Configurar transmissão</p>
+        <h2>Controle da live no Instagram</h2>
+        <p class="hint">Cole o link da live/perfil do Instagram. As clientes recebem aviso e escolhem entre Instagram ou BRECHORISEE.</p>
+      </div>
+    </div>
+    <form method="post" action="/live/instagram/start" class="stack-form">
+      <input type="hidden" name="session_id" value="{{ session.id }}">
+      <label>Link da live ou perfil do Instagram</label>
+      <input name="instagram_live_url" value="{{ session.instagram_live_url or '' }}" placeholder="https://www.instagram.com/seu_perfil/live/ ou @brechorisee">
+      <label class="checkbox-line"><input type="checkbox" name="brechorisee_watch_enabled" value="1" {% if session.brechorisee_watch_enabled != 0 %}checked{% endif %}> Permitir que a cliente acompanhe também pelo BRECHORISEE</label>
+      <button class="btn primary" type="submit">Iniciar controle Instagram e avisar clientes</button>
+    </form>
+    <form method="post" action="/live/instagram/update" class="inline-form" style="margin-top:10px;">
+      <input type="hidden" name="session_id" value="{{ session.id }}">
+      <input type="hidden" name="instagram_live_url" value="{{ session.instagram_live_url or '' }}">
+      <input type="hidden" name="brechorisee_watch_enabled" value="{{ 1 if session.brechorisee_watch_enabled != 0 else 0 }}">
+      <button class="btn ghost" type="submit">Salvar configuração atual</button>
+    </form>
+  </section>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Resposta rápida</p>
+      <h2>Texto para colar no Instagram</h2>
+      <p class="hint">Use quando alguém perguntar “qual valor?”, “qual código?” ou “quero essa”.</p>
+    </div>
+    <button class="btn" type="button" id="copyInstagramReplyBtn">Copiar resposta</button>
+  </div>
+  <textarea class="copy-box" id="instagramReplyBox">A live está acontecendo no Instagram ✨
+
+Para comprar com segurança pelo BRECHORISEE:
+• Acompanhar peças ao vivo: {{ request.url_for('customer_live_options_page') }}
+• Use o app Cliente para abrir a vitrine e a live da cliente.
+
+Quando eu mostrar uma peça, o sistema reconhece e cria a referência com código, valor e botão de reserva.</textarea>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Referências ativas</p>
+      <h2>Peças reconhecidas/fixadas</h2>
+      <p class="hint">Vendidas somem automaticamente. Disponíveis continuam para clientes e repescagem.</p>
+    </div>
+  </div>
+  <div class="reference-strip">
+    {% for p in references %}
+      <article class="reference-tile">
+        {% if p.image_url %}<img src="{{ p.image_url }}" alt="{{ p.title }}">{% endif %}
+        <div>
+          <strong>{{ p.title }}</strong>
+          <small>{{ p.code }} • {{ p.price_label }}</small>
+          <div><a href="{{ p.public_url }}" target="_blank">Abrir peça</a></div>
+        </div>
+      </article>
+    {% else %}
+      <div class="empty-state compact">
+        <h3>Nenhuma referência ainda.</h3>
+        <p>Abra o studio, mostre uma peça e o reconhecimento cria os cards.</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('copyInstagramReplyBtn');
+  const box = document.getElementById('instagramReplyBox');
+  btn?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(box.value);
+      btn.textContent = 'Copiado!';
+      setTimeout(() => btn.textContent = 'Copiar resposta', 1400);
+    } catch (e) {
+      box.select();
+      document.execCommand('copy');
+    }
+  });
+});
+</script>
+{% endblock %}

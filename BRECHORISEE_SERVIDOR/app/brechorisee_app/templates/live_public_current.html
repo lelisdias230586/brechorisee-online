@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#a84d3a">
+  <title>BRECHORISEE • Peça atual da live</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#fff8f4,#f4e1d7);color:#34221e}
+    .wrap{max-width:980px;margin:auto;padding:18px}.card{background:#fff;border-radius:30px;padding:20px;box-shadow:0 24px 80px rgba(95,45,30,.13);border:1px solid #eadfd8}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.live{background:#ff1c74;color:#fff;padding:8px 14px;border-radius:999px;font-weight:900}.grid{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:18px;align-items:start;margin-top:16px}.photo{width:100%;height:auto;max-height:min(62vh,520px);object-fit:contain;object-position:center;border-radius:26px;background:#fffaf5;margin-inline:auto}.meta{display:flex;gap:8px;flex-wrap:wrap}.meta span{padding:8px 12px;border-radius:999px;background:#f4ebe6;color:#714134;font-weight:800}.price{font-size:2rem;font-weight:900;color:#a84d3a}.btn{display:inline-flex;align-items:center;justify-content:center;text-align:center;text-decoration:none;border:none;border-radius:18px;padding:14px 16px;font-weight:900;cursor:pointer}.btn.primary{background:#a84d3a;color:#fff}.btn.ghost{background:#f4ebe6;color:#704033}.btn.dark{background:#1f1714;color:#fff}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}input{border:1px solid #eadfd8;border-radius:16px;padding:13px 14px;font:inherit;width:100%;box-sizing:border-box}.form{display:grid;gap:10px;margin-top:14px}.hint{color:#736760;line-height:1.4}.next,.appbox{margin-top:14px;padding:14px;border-radius:18px;background:#fff8f4;border:1px solid #f1dfd6}.notice{font-weight:800;color:#7b3f2f;white-space:pre-line;min-height:24px}.small{font-size:.92rem}.hidden{display:none!important}@media(max-width:760px){.grid{grid-template-columns:1fr}.photo{max-height:min(58vh,390px)}.actions{grid-template-columns:1fr}.wrap{padding:10px}.card{border-radius:24px;padding:14px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <div class="top"><strong>BRECHORISEE</strong><span class="live" id="liveStatus">LIVE</span></div>
+      <div class="grid">
+        <img class="photo" id="photo" src="/static/img/logo-brechorisee-tight.png" alt="Peça atual">
+        <div>
+          <p class="hint">Peça atual da live</p>
+          <h1 id="title">Carregando...</h1>
+          <p class="price" id="price">R$ 0,00</p>
+          <div class="meta">
+            <span id="code">Código</span><span id="size">Tamanho</span><span id="status">Status</span>
+          </div>
+          <p id="details" class="hint"></p>
+          <form class="form" id="reserveForm">
+            <input id="customerName" placeholder="Seu nome" required>
+            <input id="customerPhone" placeholder="WhatsApp / telefone">
+            <input id="customerInstagram" placeholder="@instagram">
+            <div class="actions">
+              <button class="btn primary" type="submit">Quero reservar</button>
+              <button class="btn ghost" type="button" id="waitlistBtn">Entrar na fila</button>
+              <a class="btn dark" id="openCompanion" href="/live/companion">Ver com botões da live</a>
+              <a class="btn ghost" id="whatsappBtn" href="#" target="_blank" rel="noopener">Mandar no WhatsApp</a>
+            </div>
+          </form>
+          <p class="notice" id="notice"></p>
+          <div class="next"><strong>Próxima peça:</strong> <span id="next">ainda não definida</span></div>
+          <div class="appbox">
+            <strong>Mais rápido pelo app BRECHORISEE 💖</strong>
+            <p class="hint small">Quem tem o app pode receber o card da peça atual por cima do Instagram. Quem ainda não baixou pode continuar pelo navegador.</p>
+            <div class="actions">
+              <a class="btn primary" id="downloadAppBtn" href="/app/cliente">Baixar app</a>
+              <a class="btn ghost" id="openAppOverlay" href="brechorisee://live-companion?abrir_instagram=1">Abrir card no app</a>
+            </div>
+          </div>
+          <p class="hint">A reserva segue a ordem de chegada e pode ter prazo de pagamento definido pela loja.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  let current = null;
+  const $ = id => document.getElementById(id);
+  const notice = msg => { $('notice').textContent = msg || ''; };
+  async function load(){
+    const res = await fetch('/api/live/companion', {credentials:'same-origin'});
+    const data = await res.json().catch(()=>({ok:false}));
+    if(!data.ok && !data.current_product){ $('title').textContent='Nenhuma live ativa no momento'; $('price').textContent=''; return; }
+    current = data.current_product;
+    $('liveStatus').textContent = (data.session?.status || 'live').replace('_',' ').toUpperCase();
+    if(data.app?.download_url) $('downloadAppBtn').href = data.app.download_url;
+    if(!current){
+      $('photo').src = '/static/img/logo-brechorisee-tight.png';
+      $('title').textContent='Aguardando a próxima peça';
+      $('price').textContent=''; $('code').textContent='sem peça'; $('size').textContent=''; $('status').textContent='';
+      $('details').textContent='Quando a loja avançar a fila, a peça aparece aqui automaticamente.';
+      $('next').textContent = data.next_product ? `${data.next_product.title} (${data.next_product.price_label})` : 'ainda não definida';
+      $('whatsappBtn').href = '#';
+      return;
+    }
+    $('photo').src = current.image_url || '/static/img/logo-brechorisee-tight.png';
+    $('title').textContent = current.title || 'Peça atual';
+    $('price').textContent = current.price_label || '';
+    $('code').textContent = current.code || '';
+    $('size').textContent = `Tam. ${current.size || '-'}`;
+    $('status').textContent = current.status || '';
+    $('details').textContent = [current.measurements, current.condition, current.characteristics].filter(Boolean).join(' · ');
+    $('next').textContent = data.next_product ? `${data.next_product.title} (${data.next_product.price_label})` : 'ainda não definida';
+    $('whatsappBtn').href = current.whatsapp_url || '#';
+  }
+  async function reserve(forceWaitlist=false){
+    if(!current){ notice('A peça atual ainda não está disponível.'); return; }
+    const fd = new FormData();
+    fd.append('customer_name', $('customerName').value.trim());
+    fd.append('customer_phone', $('customerPhone').value.trim());
+    fd.append('customer_instagram', $('customerInstagram').value.trim());
+    fd.append('force_waitlist', forceWaitlist ? '1' : '0');
+    const res = await fetch('/api/live/companion/reservar', {method:'POST', body:fd, credentials:'same-origin'});
+    const data = await res.json().catch(()=>({ok:false,message:'Não consegui reservar.'}));
+    notice((data.message || (data.ok ? 'Pedido enviado.' : 'Não consegui reservar.')) + (data.cta_text ? '\n\n' + data.cta_text : ''));
+    await load();
+  }
+  $('reserveForm').addEventListener('submit', ev => { ev.preventDefault(); reserve(false); });
+  $('waitlistBtn').addEventListener('click', () => reserve(true));
+  load(); setInterval(load, 1500);
+});
+</script>
+</body>
+</html>

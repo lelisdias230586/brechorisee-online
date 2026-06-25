@@ -1,0 +1,61 @@
+{% extends "public_store_base.html" %}
+{% block store_content %}
+<style>
+.customer-delivery-grid{display:grid;gap:16px}
+.customer-delivery-card{padding:18px;border-radius:28px;background:#fff;border:1px solid #eadfd8;box-shadow:0 18px 60px rgba(95,45,30,.09)}
+.customer-tracking-map{height:180px;border-radius:24px;position:relative;overflow:hidden;background:linear-gradient(135deg,#dff3e8,#eef4ff);border:1px solid rgba(80,115,92,.18);margin:12px 0}
+.customer-tracking-map:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.65) 0 2px,transparent 2px 56px),repeating-linear-gradient(0deg,rgba(255,255,255,.75) 0 2px,transparent 2px 48px);opacity:.82}
+.customer-road{position:absolute;left:12%;right:12%;top:54%;height:8px;border-radius:999px;background:rgba(31,23,20,.18)}
+.customer-road span{display:block;height:100%;width:var(--progress,30%);border-radius:999px;background:linear-gradient(90deg,#ad503d,#1f1714)}
+.customer-pin{position:absolute;width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 10px 25px rgba(0,0,0,.22)}
+.customer-pin:after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;left:10px;top:10px}
+.customer-pin.store{left:10%;top:44%;background:#1f1714}.customer-pin.client{right:10%;top:22%;background:#ad503d}
+.customer-truck{position:absolute;left:calc(12% + (var(--progress,30%) * .72));top:39%;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#fff;box-shadow:0 12px 30px rgba(0,0,0,.20);font-size:22px}
+.customer-track-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}.customer-track-meta span{padding:8px 12px;border-radius:999px;background:#fff8f4;color:#734033;font-weight:700}
+.customer-track-progress{height:10px;border-radius:999px;background:#eadfd8;overflow:hidden;margin:12px 0}.customer-track-progress span{display:block;height:100%;width:var(--progress,30%);background:linear-gradient(90deg,#ad503d,#1f1714)}
+</style>
+<section class="panel">
+  <p class="eyebrow">Área da cliente</p>
+  <h1>Minhas entregas</h1>
+  <p class="hint">Acompanhe a aproximação quando a loja marcar seu pedido como entrega.</p>
+  <div class="inline-actions">
+    <a class="btn ghost" href="/cliente/vitrine">Voltar para vitrine</a>
+    <a class="btn ghost" href="/cliente/perfil">Minha conta</a>
+  </div>
+</section>
+
+<section class="customer-delivery-grid">
+  {% for item in deliveries %}
+    {% set order = item.order %}
+    {% set tracking = item.tracking %}
+    <article class="customer-delivery-card" style="--progress:{{ tracking.progress }}%;">
+      <p class="eyebrow">{{ order.order_code }} • {{ item.status_label }}</p>
+      <h2>{{ tracking.stage }}</h2>
+      <p>{{ tracking.message }}</p>
+      <div class="customer-tracking-map" aria-label="Mapa aproximado da entrega">
+        <span class="customer-road"><span></span></span>
+        <span class="customer-pin store"></span>
+        <span class="customer-truck">🚚</span>
+        <span class="customer-pin client"></span>
+      </div>
+      <div class="customer-track-meta">
+        <span>{{ tracking.eta }}</span>
+        {% if tracking.updated_at %}<span>Atualizado: {{ tracking.updated_at }}</span>{% endif %}
+      </div>
+      <div class="customer-track-progress"><span></span></div>
+      {% if tracking.address %}<p class="hint">Destino: {{ tracking.address }}</p>{% endif %}
+      <div class="inline-actions">
+        <a class="btn primary" href="/loja/pedido/{{ order.id }}">Ver pedido</a>
+        {% if tracking.maps_url %}<a class="btn ghost" href="{{ tracking.maps_url }}" target="_blank" rel="noopener">Abrir Google Maps</a>{% endif %}
+        {% if tracking.waze_url %}<a class="btn ghost" href="{{ tracking.waze_url }}" target="_blank" rel="noopener">Abrir Waze</a>{% endif %}
+      </div>
+    </article>
+  {% else %}
+    <section class="panel empty-state">
+      <h3>Nenhuma entrega encontrada.</h3>
+      <p>Quando você escolher entrega em um pedido, a aproximação aparecerá aqui.</p>
+      <a class="btn primary" href="/loja/carrinho">Ir para sacola</a>
+    </section>
+  {% endfor %}
+</section>
+{% endblock %}

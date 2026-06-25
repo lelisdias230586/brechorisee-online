@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block page_title %}Montante da cliente{% endblock %}
+{% block content %}
+<section class="panel hero-panel">
+  <div>
+    <p class="eyebrow">Carteira / montante consignado</p>
+    <h2>Adicione um montante e retire peças por código ou QR.</h2>
+    <p>Quando a peça é escaneada, o valor sai do saldo da cliente, a peça baixa do estoque e a venda fica registrada.</p><p><a class="btn primary" href="/consignado-profissional">Abrir consignado profissional v4.9.2</a></p>
+  </div>
+  <form class="search-row compact-search" method="get" action="/consignado">
+    <input name="q" value="{{ q }}" placeholder="Buscar cliente, telefone ou Instagram">
+    <button class="btn primary" type="submit">Buscar</button>
+  </form>
+</section>
+
+<section class="grid two-columns">
+  <article class="panel">
+    <p class="eyebrow">Adicionar montante</p>
+    <form id="creditForm" class="stack-form">
+      <label>Cliente
+        <select name="customer_id" id="customerSelect">
+          {% for c in customers %}
+            <option value="{{ c.id }}">{{ c.name }} — saldo {{ c.balance|money }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Valor do montante<input name="amount" inputmode="decimal" placeholder="Ex.: 150,00"></label>
+      <label>Observação<input name="notes" placeholder="Ex.: crédito para live de hoje"></label>
+      <button class="btn primary" type="submit">Adicionar saldo</button>
+    </form>
+    <div id="creditResult" class="result-box"></div>
+  </article>
+
+  <article class="panel">
+    <p class="eyebrow">Baixar peça do montante</p>
+    <form id="scanForm" class="stack-form">
+      <label>Cliente
+        <select name="customer_id">
+          {% for c in customers %}
+            <option value="{{ c.id }}">{{ c.name }} — saldo {{ c.balance|money }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Código/QR da peça<input name="code" id="pieceCode" autocapitalize="characters" placeholder="Ex.: VESTIDO-001"></label>
+      <label>Valor manual opcional<input name="amount" inputmode="decimal" placeholder="vazio = preço da peça"></label>
+      <button class="btn primary" type="submit">Retirar do montante</button>
+    </form>
+    <p class="hint">No celular, toque no campo do código e use leitor/teclado ou câmera do app quando disponível.</p>
+    <div id="scanResult" class="result-box"></div>
+  </article>
+</section>
+
+<section class="panel">
+  <p class="eyebrow">Últimos movimentos</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Data</th><th>Cliente</th><th>Tipo</th><th>Valor</th><th>Saldo</th><th>Peça</th><th>Obs.</th></tr></thead>
+      <tbody>
+      {% for m in movements %}
+        <tr>
+          <td>{{ m.created_at }}</td><td>{{ m.customer_name }}</td><td>{{ m.movement_type }}</td>
+          <td>{{ m.amount|money }}</td><td>{{ m.balance_after|money }}</td><td>{{ m.code or '-' }}</td><td>{{ m.notes or '' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+async function postJson(url, form){
+  const data = Object.fromEntries(new FormData(form).entries());
+  const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+  return await res.json();
+}
+document.getElementById('creditForm').addEventListener('submit', async ev=>{
+  ev.preventDefault();
+  const out = await postJson('/api/consignado/credito', ev.target);
+  document.getElementById('creditResult').innerHTML = out.ok ? `<p class="success">Saldo atualizado: ${Number(out.balance).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</p>` : `<p class="alert error">${out.message}</p>`;
+});
+document.getElementById('scanForm').addEventListener('submit', async ev=>{
+  ev.preventDefault();
+  const out = await postJson('/api/consignado/escanear', ev.target);
+  document.getElementById('scanResult').innerHTML = out.ok ? `<p class="success">${out.message}<br>Venda: ${out.sale_code}<br>Saldo: ${Number(out.balance).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</p>` : `<p class="alert error">${out.message}</p>`;
+});
+</script>
+{% endblock %}

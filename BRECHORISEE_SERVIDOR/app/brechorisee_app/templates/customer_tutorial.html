@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#a84d3a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Como usar • BRECHORISEE Cliente</title>
+  <link rel="manifest" href="{{ url_for('static', path='/manifest_cliente.webmanifest') }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/customer-tutorial.css') }}">
+</head>
+<body class="tutorial-body">
+  <main class="tutorial-shell"
+        data-version="{{ tutorial.version }}"
+        data-live-url="{{ app_links.live_current }}"
+        data-companion-url="{{ app_links.live_companion }}"
+        data-download-url="{{ app_links.download }}">
+    <header class="tutorial-header">
+      <a class="tutorial-brand" href="/loja" aria-label="BRECHORISEE">
+        <img src="{{ url_for('static', path='/img/logo-brechorisee-tight.png') }}" alt="BRECHORISEE">
+        <span><strong>BRECHORISEE</strong><small>guia da cliente</small></span>
+      </a>
+      <nav class="tutorial-nav">
+        <a href="/loja">Vitrine</a>
+        <a href="/live/peca-atual">Peça atual</a>
+        <a href="/app/cliente">Baixar app</a>
+      </nav>
+    </header>
+
+    <section class="tutorial-hero">
+      <article class="tutorial-copy">
+        <p class="eyebrow">Atualizado na versão {{ tutorial.version }}</p>
+        <h1>Como acompanhar a live, reservar peças e comprar pelo BRECHORISEE.</h1>
+        <p class="lead">Assista no Instagram e use o app ou site BRECHORISEE para ver a peça atual, clicar em reservar, entrar na fila, montar sua sacola e finalizar com segurança.</p>
+        <div class="tutorial-actions">
+          <a class="btn primary" href="{{ app_links.download }}">Baixar/abrir app</a>
+          <a class="btn dark" href="{{ app_links.live_companion }}">Acompanhar sem app</a>
+          <a class="btn ghost" href="{{ app_links.deep_live }}">Abrir live no app</a>
+        </div>
+        <p class="hint">Sem app? Use pelo navegador. Com app, a peça aparece mais rápido e você recebe alerta de live.</p>
+      </article>
+
+      <article class="phone-stage" aria-label="Animação de uso do BRECHORISEE">
+        <div class="phone instagram-phone">
+          <div class="phone-top"></div>
+          <div class="ig-live">
+            <div class="ig-badge">AO VIVO</div>
+            <div class="ig-host">brechorisee</div>
+            <div class="hanger">👗</div>
+            <div class="comments">
+              <span>Maria: quero 💖</span>
+              <span>Ana: tamanho?</span>
+              <span>Carla: manda link</span>
+            </div>
+          </div>
+        </div>
+        <div class="floating-product-card">
+          <span class="live-dot"></span>
+          <strong id="animatedCardTitle">Peça atual</strong>
+          <small id="animatedCardMeta">Vestido floral • P • R$ 49,90</small>
+          <div class="mini-buttons"><b>Ver peça</b><b>Reservar</b></div>
+        </div>
+        <div class="phone app-phone">
+          <div class="phone-top"></div>
+          <div class="app-screen">
+            <div class="screen-logo">BRECHORISEE</div>
+            <div class="screen-card">
+              <div class="photo-dot">👚</div>
+              <strong>Blusa Zara M</strong>
+              <span>R$ 39,90</span>
+            </div>
+            <div class="screen-list">
+              <i>Sacola</i><i>Pix</i><i>Retirada</i>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="step-player">
+      <div class="section-title">
+        <p class="eyebrow">Passo a passo animado</p>
+        <h2>Toque nos passos ou deixe rodar.</h2>
+      </div>
+      <div class="steps-grid" id="tutorialSteps">
+        {% for step in tutorial.steps %}
+          <button class="step-card {% if loop.index0 == 0 %}active{% endif %}" type="button" data-step-index="{{ loop.index0 }}">
+            <span>{{ loop.index }}</span>
+            <strong>{{ step.title }}</strong>
+            <small>{{ step.text }}</small>
+          </button>
+        {% endfor %}
+      </div>
+      <article class="focus-panel" id="focusPanel">
+        <div class="focus-icon" id="focusIcon">📲</div>
+        <div>
+          <p class="eyebrow" id="focusKicker">Passo 1</p>
+          <h3 id="focusTitle">{{ tutorial.steps[0].title }}</h3>
+          <p id="focusText">{{ tutorial.steps[0].text }}</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="usage-modes">
+      <article>
+        <h3>Tenho o app</h3>
+        <p>Abra o app, permita notificações e use “Assistir live”. A peça atual aparece no card flutuante enquanto você assiste no Instagram.</p>
+        <a class="btn primary" href="{{ app_links.deep_live }}">Abrir modo live</a>
+      </article>
+      <article>
+        <h3>Ainda não baixei</h3>
+        <p>Clique no link da bio, comentário fixado ou WhatsApp da loja. O site mostra a peça atual e permite reservar pelo navegador.</p>
+        <a class="btn ghost" href="{{ app_links.live_current }}">Usar pelo navegador</a>
+      </article>
+      <article>
+        <h3>Depois da live</h3>
+        <p>Veja sua sacola, confirme Pix, retirada/entrega e acompanhe repescagem das peças que sobraram.</p>
+        <a class="btn ghost" href="/loja/carrinho">Ver sacola</a>
+      </article>
+    </section>
+
+    <section class="message-preview">
+      <h2>Mensagem que a loja pode te mandar</h2>
+      <pre>Oi! 💖 A peça atual da live já está no BRECHORISEE.
+
+Com app: {{ app_links.download }}
+Sem app: {{ app_links.live_current }}
+
+Toque em “Quero reservar” para garantir sua vez.</pre>
+    </section>
+  </main>
+
+  <script id="tutorialData" type="application/json">{{ tutorial|tojson }}</script>
+  <script src="{{ url_for('static', path='/js/customer-tutorial.js') }}"></script>
+</body>
+</html>

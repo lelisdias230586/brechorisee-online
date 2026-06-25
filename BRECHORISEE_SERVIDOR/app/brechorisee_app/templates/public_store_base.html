@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f1714">
+  <title>BRECHORISEE • Vitrine online</title>
+  <meta name="description" content="Vitrine online BRECHORISEE: moda circular, peças únicas, compra self-service por Pix, cartão/InfinitePay, retirada ou entrega.">
+  <link rel="manifest" href="{{ url_for('static', path='/manifest_cliente.webmanifest') }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}?v=4.6-atendimento-bot-desejos-aquisicoes">
+</head>
+<body class="public-store-body modern-store">
+  <div class="brecho-alert-dock" data-brecho-alert-dock aria-label="Resumo de novidades">
+    <a href="/cliente/chat" class="brecho-alert-pill" data-alert-kind="chat">Chat <b data-alert-count="chat">0</b></a>
+    <a href="/cliente/novidades" class="brecho-alert-pill" data-alert-kind="messages">Mensagens <b data-alert-count="messages">0</b></a>
+    <a href="/cliente/live-opcoes" class="brecho-alert-pill" data-alert-kind="live">Live <b data-alert-count="live">0</b></a>
+    <a href="/loja" class="brecho-alert-pill" data-alert-kind="pieces_new">Peças novas <b data-alert-count="pieces_new">0</b></a>
+  </div>
+  <div class="store-top-strip">
+    <span>Peças únicas • reserva após pedido • pagamento por Pix ou cartão</span>
+  </div>
+  <header class="store-header modern">
+    <a class="store-brand" href="/loja" aria-label="BRECHORISEE vitrine online">
+      <img src="{{ url_for('static', path='/img/logo-brechorisee-tight.png') }}" alt="BRECHORISEE">
+      <span><strong>BRECHORISEE</strong><small>vitrine online</small></span>
+    </a>
+    <nav class="store-nav">
+      <a href="/loja">Vitrine</a>
+      <a href="/live/peca-atual">Live</a>
+      <a href="/app/cliente">Baixar app</a>
+      <a href="/cliente/tutorial">Como usar</a>
+      <a href="/cliente">Área da cliente</a>
+      <a href="/cliente/entregas">Entregas</a>
+      <a href="/cliente/chat">Chat BRECHORISEE</a>
+      <a href="/loja/carrinho" class="store-cart-link">Sacola <b data-cart-count>0</b></a>
+      {% if settings and settings.instagram %}<a href="https://instagram.com/{{ settings.instagram|replace('@','') }}" target="_blank" rel="noopener">Instagram</a>{% endif %}
+      {% if settings and settings.whatsapp %}<a href="https://wa.me/{{ settings.whatsapp|replace(' ','')|replace('(','')|replace(')','')|replace('-','')|replace('+','') }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}
+    </nav>
+  </header>
+
+  <main class="store-main modern">
+    {% block store_content %}{% endblock %}
+  </main>
+
+  <a class="floating-cart" href="/loja/carrinho" aria-label="Abrir sacola">Sacola <b data-cart-count>0</b></a>
+
+  <section class="store-app-cta-brechorisee" style="margin:18px auto;max-width:1120px;padding:14px 18px;border-radius:22px;background:#fff8f4;border:1px solid #eadfd8;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+    <span><strong>Live mais rápida pelo app BRECHORISEE</strong><br><small>Receba a peça atual, reserve com um toque e acompanhe seu carrinho.</small></span>
+    <span style="display:flex;gap:8px;flex-wrap:wrap;"><a class="btn primary" href="/app/cliente">Baixar app</a><a class="btn ghost" href="/cliente/tutorial">Como usar</a><a class="btn ghost" href="/live/peca-atual">Continuar sem app</a></span>
+  </section>
+
+  <footer class="store-footer">
+    <strong>BRECHORISEE</strong>
+    <span>Moda circular com curadoria. Finalize pelo WhatsApp e confirme pagamento com a loja.</span>
+  </footer>
+
+  <script src="{{ url_for('static', path='/js/online-store.js') }}"></script>
+  <script src="{{ url_for('static', path='/js/customer-live-notifications.js') }}"></script>
+  <script src="{{ url_for('static', path='/js/brechorisee-ux-491.js') }}"></script>
+</body>
+</html>

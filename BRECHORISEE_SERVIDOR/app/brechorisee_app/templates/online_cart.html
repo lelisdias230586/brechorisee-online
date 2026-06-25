@@ -1,0 +1,177 @@
+{% extends "public_store_base.html" %}
+{% block store_content %}
+<style>
+.delivery-approx-card{margin:12px 0;padding:14px;border-radius:22px;background:linear-gradient(135deg,#fff8f4,#f4ebe6);border:1px solid #eadfd8;box-shadow:0 12px 38px rgba(95,45,30,.08)}
+.delivery-approx-card h3{margin:4px 0 6px}
+.delivery-approx-map{height:150px;border-radius:20px;overflow:hidden;position:relative;background:linear-gradient(135deg,#dff2e8,#eef4ff);border:1px solid rgba(80,115,92,.16);margin:10px 0}
+.delivery-approx-map:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.65) 0 2px,transparent 2px 56px),repeating-linear-gradient(0deg,rgba(255,255,255,.7) 0 2px,transparent 2px 48px);opacity:.75}
+.delivery-approx-pin{position:absolute;width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 10px 25px rgba(0,0,0,.24)}
+.delivery-approx-pin:after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;left:10px;top:10px}
+.delivery-approx-pin.shop{left:18%;top:48%;background:#1f1714}
+.delivery-approx-pin.client{right:16%;top:20%;background:#ad503d}
+.delivery-approx-line{position:absolute;left:25%;right:24%;top:52%;height:4px;background:rgba(31,23,20,.22);border-radius:999px}
+.delivery-approx-truck{position:absolute;left:54%;top:41%;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#1f1714;box-shadow:0 10px 30px rgba(0,0,0,.18);font-size:20px}
+.delivery-progress{height:9px;border-radius:999px;background:#eadfd8;overflow:hidden;margin:12px 0}
+.delivery-progress span{display:block;height:100%;width:42%;background:linear-gradient(90deg,#ad503d,#1f1714);border-radius:999px}
+.delivery-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-size:.78rem;color:#7c6b64;text-align:center}
+.delivery-steps b{display:block;color:#3a2a25}
+@media(max-width:720px){.delivery-steps{grid-template-columns:1fr 1fr;text-align:left}}
+</style>
+<section class="store-checkout-grid">
+  <article class="panel store-cart modern-cart">
+    <p class="eyebrow">Sacola</p>
+    <h1>Revise suas peças</h1>
+    <p class="hint">Confirme os itens antes de enviar seu pedido. Peças únicas ficam reservadas após o envio.</p>
+    <div id="cartItems" class="cart-items"></div>
+    <div class="cart-total"><span>Total</span><strong id="cartTotal">R$ 0,00</strong></div>
+    <a class="btn ghost wide" href="/loja">Adicionar mais peças</a>
+  </article>
+
+  <article class="panel store-checkout-card">
+    <p class="eyebrow">Finalização</p>
+    <h1>Seus dados</h1>
+    {% if checkout_profile and checkout_profile.logged %}
+      <p class="hint">Dados preenchidos automaticamente da sua conta. Você pode alterar antes de enviar.</p>
+    {% else %}
+      <p class="hint">Entre na Área da cliente para preencher automaticamente nas próximas compras.</p>
+    {% endif %}
+    <form method="post" action="/loja/pedido" class="store-checkout-form" id="checkoutForm">
+      <input type="hidden" name="codes" id="cartCodes">
+      <label>Nome completo *
+        <input name="customer_name" required placeholder="Seu nome" value="{{ checkout_profile.customer_name if checkout_profile else '' }}">
+      </label>
+      <label>WhatsApp *
+        <input name="customer_phone" required placeholder="DDD + número" value="{{ checkout_profile.customer_phone if checkout_profile else '' }}">
+      </label>
+      <label>Instagram
+        <input name="customer_instagram" placeholder="@seuinstagram" value="{{ checkout_profile.customer_instagram if checkout_profile else '' }}">
+      </label>
+      <label>Como deseja receber?
+        <select name="delivery_method" id="deliveryMethod">
+          <option value="retirada" {% if not checkout_profile or checkout_profile.delivery_method != 'entrega' %}selected{% endif %}>Retirar no local</option>
+          <option value="entrega" {% if checkout_profile and checkout_profile.delivery_method == 'entrega' %}selected{% endif %}>Entrega</option>
+        </select>
+      </label>
+      <label>Endereço ou referência para entrega
+        <textarea name="address" id="deliveryAddress" placeholder="Preencha se escolher entrega.">{{ checkout_profile.address if checkout_profile else '' }}</textarea>
+      </label>
+
+      <div class="map-checkout-box" id="mapCheckoutBox">
+        <div class="delivery-approx-card" id="deliveryApproxPreview">
+          <p class="eyebrow">Aproximação da entrega</p>
+          <h3>Ao escolher entrega, você acompanha pelo app</h3>
+          <p class="hint">Depois que a loja marcar o pedido como <strong>Em entrega</strong>, o Cliente e o Admin mostram a aproximação com etapa, previsão e mapa.</p>
+          <div class="delivery-approx-map" aria-hidden="true">
+            <span class="delivery-approx-line"></span>
+            <span class="delivery-approx-pin shop" title="Loja"></span>
+            <span class="delivery-approx-truck">🚚</span>
+            <span class="delivery-approx-pin client" title="Cliente"></span>
+          </div>
+          <div class="delivery-progress"><span></span></div>
+          <div class="delivery-steps">
+            <span><b>1</b>Pedido</span>
+            <span><b>2</b>Separado</span>
+            <span><b>3</b>Em rota</span>
+            <span><b>4</b>Entregue</span>
+          </div>
+        </div>
+        <strong>Local de entrega pelo Google Maps</strong>
+        <p class="hint">Use sua localização atual ou cole um link do Google Maps. A localização será enviada somente para a loja/admin no pedido.</p>
+        <input type="hidden" name="delivery_lat" id="deliveryLat" value="{{ checkout_profile.delivery_lat if checkout_profile else '' }}">
+        <input type="hidden" name="delivery_lng" id="deliveryLng" value="{{ checkout_profile.delivery_lng if checkout_profile else '' }}">
+        <label>Link do Google Maps
+          <input name="delivery_maps_url" id="deliveryMapsUrl" placeholder="https://maps.google.com/..." value="{{ checkout_profile.delivery_maps_url if checkout_profile else '' }}">
+        </label>
+        <div class="inline-actions">
+          <button class="btn ghost" type="button" id="useCurrentLocationBtn">Usar minha localização</button>
+          <a class="btn ghost" id="openMapsBtn" href="https://www.google.com/maps/search/?api=1" target="_blank" rel="noopener">Abrir Google Maps</a>
+        </div>
+        <p class="hint" id="locationStatus">A cliente pode negar a permissão e preencher o endereço manualmente.</p>
+      </div>
+      <label>Pagamento
+        <select name="payment_method">
+          <option value="pix" {% if not checkout_profile or checkout_profile.payment_method == 'pix' %}selected{% endif %}>Pix</option>
+          <option value="cartao" {% if checkout_profile and checkout_profile.payment_method == 'cartao' %}selected{% endif %}>Cartão / InfinitePay</option>
+          <option value="misto" {% if checkout_profile and checkout_profile.payment_method == 'misto' %}selected{% endif %}>Misto</option>
+        </select>
+      </label>
+      <label>Pix copia e cola / chave Pix
+        <textarea name="pix_text" placeholder="Opcional. A loja também pode enviar depois.">{{ checkout_profile.pix_text if checkout_profile and checkout_profile.pix_text else settings.pix_text if settings and settings.pix_text else '' }}</textarea>
+      </label>
+      <label>Link InfinitePay/cartão
+        <input name="payment_link" placeholder="Opcional. A loja também pode enviar depois." value="{{ checkout_profile.payment_link if checkout_profile else '' }}">
+      </label>
+      <label>Observações
+        <textarea name="notes" placeholder="Ex.: retirar amanhã, preferência de horário, embalagem...">{{ checkout_profile.notes if checkout_profile else '' }}</textarea>
+      </label>
+      <button class="btn primary wide" type="submit">Enviar pedido e reservar peças</button>
+      <p class="hint">Ao enviar, a mensagem pronta será direcionada para o WhatsApp da loja. A compra é confirmada quando o pagamento for validado.</p>
+    </form>
+  </article>
+</section>
+
+<script>
+(function(){
+  const deliveryMethod = document.getElementById('deliveryMethod');
+  const box = document.getElementById('mapCheckoutBox');
+  const lat = document.getElementById('deliveryLat');
+  const lng = document.getElementById('deliveryLng');
+  const mapsUrl = document.getElementById('deliveryMapsUrl');
+  const address = document.getElementById('deliveryAddress');
+  const btn = document.getElementById('useCurrentLocationBtn');
+  const openBtn = document.getElementById('openMapsBtn');
+  const status = document.getElementById('locationStatus');
+
+  function updateVisibility(){
+    if(!box || !deliveryMethod) return;
+    box.style.display = deliveryMethod.value === 'entrega' ? 'block' : 'none';
+  }
+  function setMapsFromCoords(latitude, longitude){
+    const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    if(lat) lat.value = latitude;
+    if(lng) lng.value = longitude;
+    if(mapsUrl) mapsUrl.value = url;
+    if(openBtn) openBtn.href = url;
+    if(status) status.textContent = 'Localização capturada. Confira se o ponto está correto antes de enviar.';
+  }
+  function updateOpenMap(){
+    const typed = mapsUrl && mapsUrl.value ? mapsUrl.value.trim() : '';
+    if(typed && typed.startsWith('http')){
+      openBtn.href = typed;
+      return;
+    }
+    if(lat && lng && lat.value && lng.value){
+      openBtn.href = `https://www.google.com/maps?q=${lat.value},${lng.value}`;
+      return;
+    }
+    const addr = address && address.value ? address.value.trim() : '';
+    openBtn.href = addr ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}` : 'https://www.google.com/maps/search/?api=1';
+  }
+
+  if(deliveryMethod) deliveryMethod.addEventListener('change', updateVisibility);
+  if(address) address.addEventListener('input', updateOpenMap);
+  if(mapsUrl) mapsUrl.addEventListener('input', updateOpenMap);
+  if(btn){
+    btn.addEventListener('click', function(){
+      if(!navigator.geolocation){
+        if(status) status.textContent = 'Este aparelho/navegador não liberou localização. Preencha o endereço ou cole o link do Maps.';
+        return;
+      }
+      if(status) status.textContent = 'Buscando localização...';
+      navigator.geolocation.getCurrentPosition(
+        function(pos){
+          setMapsFromCoords(pos.coords.latitude.toFixed(7), pos.coords.longitude.toFixed(7));
+        },
+        function(){
+          if(status) status.textContent = 'Não foi possível pegar a localização. Cole o link do Google Maps ou preencha o endereço.';
+        },
+        {enableHighAccuracy:true, timeout:10000, maximumAge:60000}
+      );
+    });
+  }
+  updateVisibility();
+  updateOpenMap();
+})();
+</script>
+
+{% endblock %}

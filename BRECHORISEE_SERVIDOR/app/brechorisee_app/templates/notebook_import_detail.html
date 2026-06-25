@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block page_title %}Conferência do caderno #{{ batch.id }}{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Importação por câmera</p>
+      <h2>Conferir antes de aplicar</h2>
+      <p class="hint">Status: <strong>{{ batch.status }}</strong> • OCR: {{ batch.ocr_engine or 'manual' }} • Confiança: {{ '%.0f'|format((batch.confidence or 0) * 100) }}%</p>
+    </div>
+    <div class="inline-actions">
+      <a class="btn ghost" href="/caderno">Nova página</a>
+      <a class="btn ghost" href="/sales">Vendas</a>
+      <a class="btn ghost" href="/reports">Relatórios</a>
+    </div>
+  </div>
+
+  {% if batch.image_filename %}
+    <img class="query-image notebook-page-image" src="/static/uploads/{{ batch.image_filename }}" alt="Página do caderno">
+  {% endif %}
+
+  {% if payload.warnings %}
+  <div class="warning-list">
+    {% for warning in payload.warnings %}
+      <p class="alert-warning">{{ warning }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Texto</p>
+      <h2>Editar reconhecimento</h2>
+      <p class="hint">Corrija nomes, valores e datas aqui. Ao salvar, as linhas estruturadas serão recalculadas.</p>
+    </div>
+  </div>
+  <form method="post" action="/caderno/importacoes/{{ batch.id }}/atualizar-texto" class="stacked-form">
+    <textarea name="edited_text" rows="14">{{ batch.edited_text or batch.ocr_text or '' }}</textarea>
+    <button class="btn primary" type="submit">Salvar correções e reanalisar</button>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Resumo</p>
+      <h2>Dados extraídos</h2>
+    </div>
+    {% if batch.status != 'aplicado' %}
+    <form method="post" action="/caderno/importacoes/{{ batch.id }}/aplicar" onsubmit="return confirm('Aplicar esta importação agora? Serão criados clientes, peças vendidas e vendas históricas.');">
+      <button class="btn primary" type="submit">Aplicar no sistema</button>
+    </form>
+    {% else %}
+      <span class="badge">Aplicado em {{ batch.applied_at }}</span>
+    {% endif %}
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><small>Clientes</small><strong>{{ payload.summary.customers if payload.summary else 0 }}</strong></div>
+    <div class="stat-card"><small>Peças</small><strong>{{ payload.summary.sale_items if payload.summary else 0 }}</strong></div>
+    <div class="stat-card"><small>Bruto</small><strong>{{ (payload.summary.gross_total if payload.summary else 0)|money }}</strong></div>
+    <div class="stat-card"><small>Líquido estimado</small><strong>{{ (payload.summary.net_estimated if payload.summary else 0)|money }}</strong></div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="compact-table">
+      <thead>
+        <tr>
+          <th>Linha</th>
+          <th>Tipo</th>
+          <th>Cliente</th>
+          <th>Peça/descrição</th>
+          <th>Valor</th>
+          <th>Data</th>
+          <th>Conf.</th>
+          <th>Vínculo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for line in lines %}
+        <tr class="{{ 'muted-row' if not line.confirmed else '' }}">
+          <td>{{ line.line_no }}</td>
+          <td><span class="badge">{{ line.entry_type }}</span></td>
+          <td>{{ line.customer_name }}</td>
+          <td>
+            {% if line.product_title %}<strong>{{ line.product_title }}</strong><br>{% endif %}
+            <small>{{ line.raw_line }}</small>
+          </td>
+          <td>{{ line.amount|money if line.amount is not none else '' }}</td>
+          <td>{{ line.date_text }}</td>
+          <td>{{ '%.0f'|format((line.confidence or 0) * 100) }}%</td>
+          <td>
+            {% if line.linked_sale_id %}
+              <a href="/sales/{{ line.linked_sale_id }}">Venda #{{ line.linked_sale_id }}</a>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8">Nenhuma linha reconhecida.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

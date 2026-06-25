@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section-head no-margin">
+  <div>
+    <p class="eyebrow">Acessos</p>
+    <h1>Usuários e senhas</h1>
+    <p>Crie administradoras, clientes, altere senhas e ative/desative acessos sem apagar o banco.</p>
+  </div>
+</section>
+
+{% if error %}<div class="alert danger">{{ error }}</div>{% endif %}
+{% if success %}<div class="alert success">{{ success }}</div>{% endif %}
+
+<section class="grid two">
+  <article class="panel">
+    <div class="section-head no-margin">
+      <div>
+        <p class="eyebrow">Admin</p>
+        <h2>Criar novo administrador</h2>
+      </div>
+    </div>
+    <form method="post" action="/usuarios/admin/criar" class="stack-form">
+      <label>Nome / usuário
+        <input name="name" required placeholder="Ex.: Lelis Admin">
+      </label>
+      <label>E-mail opcional
+        <input name="email" type="email" placeholder="admin@brechorisee.com">
+      </label>
+      <label>Senha
+        <input name="password" type="password" required placeholder="Mínimo 6 caracteres">
+      </label>
+      <input type="hidden" name="role" value="admin">
+      <button class="btn primary wide" type="submit">Criar administrador</button>
+    </form>
+  </article>
+
+  <article class="panel">
+    <div class="section-head no-margin">
+      <div>
+        <p class="eyebrow">Cliente</p>
+        <h2>Criar cliente com senha</h2>
+      </div>
+    </div>
+    <form method="post" action="/usuarios/cliente/criar" class="stack-form">
+      <label>Nome
+        <input name="name" required placeholder="Nome da cliente">
+      </label>
+      <label>WhatsApp
+        <input name="phone" required inputmode="tel" placeholder="DDD + número">
+      </label>
+      <label>E-mail opcional
+        <input name="email" type="email" placeholder="email@exemplo.com">
+      </label>
+      <label>Instagram opcional
+        <input name="instagram" placeholder="@cliente">
+      </label>
+      <label>Preferências
+        <textarea name="style_preferences" rows="2" placeholder="Tamanho, peças, estilo..."></textarea>
+      </label>
+      <label>Senha
+        <input name="password" type="password" required placeholder="Mínimo 4 caracteres">
+      </label>
+      <button class="btn primary wide" type="submit">Criar cliente</button>
+    </form>
+  </article>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Administradores</p>
+      <h2>Alterar senha / status</h2>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Status</th>
+          <th>Último acesso</th>
+          <th>Nova senha</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in admins %}
+        <tr>
+          <td>#{{ a.id }}</td>
+          <td>{{ a.name }}</td>
+          <td>{{ a.email or '-' }}</td>
+          <td>{{ 'Ativo' if a.active else 'Inativo' }}</td>
+          <td>{{ a.last_login_at or '-' }}</td>
+          <td>
+            <form method="post" action="/usuarios/admin/{{ a.id }}/senha" class="inline-form">
+              <input name="password" type="password" placeholder="Nova senha" required style="min-width:150px;">
+              <input name="password_confirm" type="password" placeholder="Confirmar" style="min-width:120px;">
+              <button class="btn ghost small" type="submit">Alterar</button>
+            </form>
+          </td>
+          <td>
+            <form method="post" action="/usuarios/admin/{{ a.id }}/status">
+              <input type="hidden" name="active" value="{{ 0 if a.active else 1 }}">
+              <button class="btn ghost small" type="submit">{{ 'Desativar' if a.active else 'Ativar' }}</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7">Nenhum administrador cadastrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Clientes</p>
+      <h2>Alterar senha / status</h2>
+      <p class="hint">A cliente também pode alterar a própria senha em /cliente/perfil.</p>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Cliente</th>
+          <th>WhatsApp</th>
+          <th>Instagram</th>
+          <th>Status</th>
+          <th>Último acesso</th>
+          <th>Nova senha</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in customers %}
+        <tr>
+          <td>#{{ c.id }}</td>
+          <td>{{ c.name }}<br><small>{{ c.email or '' }}</small></td>
+          <td>{{ c.phone or '-' }}</td>
+          <td>{{ c.instagram or '-' }}</td>
+          <td>{{ 'Ativo' if c.active else 'Inativo' }}</td>
+          <td>{{ c.last_login_at or '-' }}</td>
+          <td>
+            <form method="post" action="/usuarios/cliente/{{ c.id }}/senha" class="inline-form">
+              <input name="password" type="password" placeholder="Nova senha" required style="min-width:150px;">
+              <input name="password_confirm" type="password" placeholder="Confirmar" style="min-width:120px;">
+              <button class="btn ghost small" type="submit">Alterar</button>
+            </form>
+          </td>
+          <td>
+            <form method="post" action="/usuarios/cliente/{{ c.id }}/status">
+              <input type="hidden" name="active" value="{{ 0 if c.active else 1 }}">
+              <button class="btn ghost small" type="submit">{{ 'Desativar' if c.active else 'Ativar' }}</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8">Nenhuma cliente cadastrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

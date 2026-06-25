@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-header">
+  <div>
+    <p class="eyebrow">Bot BRECHORISEE</p>
+    <h1>Desejos e Aquisições das clientes</h1>
+    <p class="muted">Acompanhe o que as clientes procuram. Quando o bot não encontra uma peça, ela vira item para procurar/adquirir para aquela cliente.</p>
+  </div>
+  <div class="header-actions">
+    <a class="btn secondary" href="/bot-risee">Configurar Bot BRECHORISEE</a>
+    <a class="btn" href="/atendimento">Abrir atendimento</a>
+  </div>
+</section>
+
+<div class="metric-grid product-search-stats">
+  <article class="metric-card">
+    <span>Total de desejos/buscas</span>
+    <strong>{{ stats.total }}</strong>
+    <small>Consultas feitas no Chat BRECHORISEE</small>
+  </article>
+  <article class="metric-card">
+    <span>Para adquirir</span>
+    <strong>{{ stats.procurar }}</strong>
+    <small>Itens que a loja deve procurar</small>
+  </article>
+  <article class="metric-card">
+    <span>Respondidas</span>
+    <strong>{{ stats.respondida }}</strong>
+    <small>O bot encontrou opções</small>
+  </article>
+  <article class="metric-card">
+    <span>Clientes avisadas</span>
+    <strong>{{ stats.cliente_avisada }}</strong>
+    <small>Clientes já acionadas</small>
+  </article>
+</div>
+
+<div class="card">
+  <form class="filter-row" method="get" action="{{ request.url.path }}">
+    <label>
+      Status
+      <select name="status">
+        {% for opt in ['todos', 'desejo', 'procurar', 'em_garimpo', 'encontrada', 'cliente_avisada', 'reservada', 'adquirida', 'respondida', 'arquivada'] %}
+          <option value="{{ opt }}" {% if status == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="btn" type="submit">Filtrar</button>
+  </form>
+</div>
+
+<section class="product-search-list">
+  {% if searches %}
+    {% for item in searches %}
+      {% set criteria = item.criteria_json | default('{}') %}
+      <article class="card product-search-card">
+        <div class="product-search-card-top">
+          <div>
+            <p class="eyebrow">#{{ item.id }} • {{ item.created_at }}</p>
+            <h3>{{ item.raw_query }}</h3>
+            <p class="muted">
+              Cliente: {{ item.customer_name or 'não identificada' }}
+              {% if item.customer_phone %} • {{ item.customer_phone }}{% endif %}
+            </p>
+          </div>
+          <span class="status-pill status-{{ item.acquisition_status or item.status }}">{{ item.acquisition_status or item.status }}</span>
+        </div>
+        <div class="product-search-grid">
+          <div>
+            <strong>Critérios detectados</strong>
+            <pre class="product-search-json">{{ criteria }}</pre>
+          </div>
+          <div>
+            <strong>Desejo / aquisição</strong>
+            <p>{{ item.desired_summary or 'Peça desejada pela cliente' }}</p>
+            <p class="muted">Prioridade: {{ item.acquisition_priority or 'normal' }} • Encontradas pelo bot: {{ item.matched_count }}</p>
+            {% if item.matched_product_ids %}
+              <p class="muted">Peças sugeridas: {{ item.matched_product_ids }}</p>
+            {% else %}
+              <p class="muted">Sem peça exata. Item entrou na lista para procurar, garimpar ou cadastrar para essa cliente.</p>
+            {% endif %}
+          </div>
+        </div>
+        <div class="inline-actions">
+          <form method="post" action="/api/buscas-pecas/{{ item.id }}/status" data-ajax-status>
+            <input type="hidden" name="status" value="em_garimpo">
+            <button class="btn secondary" type="submit">Procurando peça</button>
+          </form>
+          <form method="post" action="/api/buscas-pecas/{{ item.id }}/status" data-ajax-status>
+            <input type="hidden" name="status" value="encontrada">
+            <button class="btn secondary" type="submit">Peça encontrada</button>
+          </form>
+          <form method="post" action="/api/buscas-pecas/{{ item.id }}/status" data-ajax-status>
+            <input type="hidden" name="status" value="cliente_avisada">
+            <button class="btn secondary" type="submit">Cliente avisada</button>
+          </form>
+          <form method="post" action="/api/buscas-pecas/{{ item.id }}/status" data-ajax-status>
+            <input type="hidden" name="status" value="adquirida">
+            <button class="btn secondary" type="submit">Adquirida</button>
+          </form>
+          {% if item.chat_thread_id %}
+            <a class="btn" href="/atendimento/{{ item.chat_thread_id }}">Abrir conversa</a>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state card">
+      <h3>Nenhuma busca registrada ainda</h3>
+      <p>Quando uma cliente perguntar por uma peça que não existe no estoque, o Bot BRECHORISEE registra aqui como desejo/aquisição.</p>
+    </div>
+  {% endif %}
+</section>
+
+<script>
+document.querySelectorAll('form[data-ajax-status]').forEach((form) => {
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+    if (res.ok) location.reload();
+    else alert('Não foi possível atualizar o status.');
+  });
+});
+</script>
+{% endblock %}

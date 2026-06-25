@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+{% block page_title %}Gestão 360{% endblock %}
+{% block content %}
+<section class="hero-panel panel">
+  <div>
+    <p class="eyebrow">Do 1 ao 20</p>
+    <h2>Clientes, reservas, desejos, financeiro, backup, lotes e operação</h2>
+    <p>Central para vender mais e controlar melhor o BRECHORISEE. Os módulos abaixo usam o mesmo banco local do sistema e do app Android.</p>
+  </div>
+  <div class="feature-stack">
+    <span>Receita 30 dias: <strong>{{ finance.revenue|money }}</strong></span>
+    <span>Despesas 30 dias: <strong>{{ finance.expenses|money }}</strong></span>
+    <span>Resultado 30 dias: <strong>{{ finance.net|money }}</strong></span>
+    <span>Estoque disponível: <strong>{{ finance.stock_count }} peças</strong></span>
+  </div>
+</section>
+
+<section class="panel gestao-index">
+  <h2>Atalhos</h2>
+  <div class="quick-grid">
+    <a class="btn" href="#clientes">Clientes</a>
+    <a class="btn" href="#reservas">Reservas</a>
+    <a class="btn" href="#desejos">Lista de desejos</a>
+    <a class="btn" href="#whatsapp">WhatsApp</a>
+    <a class="btn" href="#fornecedoras">Repasse</a>
+    <a class="btn" href="#financeiro">Financeiro</a>
+    <a class="btn" href="#promocoes">Promoções</a>
+    <a class="btn" href="#etiquetas">Etiquetas</a>
+    <a class="btn" href="#backup">Backup</a>
+    <a class="btn" href="#usuarios">Usuários</a>
+    <a class="btn" href="#vitrine">Vitrine</a>
+    <a class="btn" href="#campanhas">Campanhas</a>
+    <a class="btn" href="#looks">Looks</a>
+    <a class="btn" href="#provador">Provador</a>
+    <a class="btn" href="#pesquisas">Interesse</a>
+    <a class="btn" href="#lotes">Lotes</a>
+    <a class="btn" href="#conferencia">Conferência</a>
+    <a class="btn" href="#trocas">Trocas</a>
+    <a class="btn" href="#recibos">Recibos</a>
+    <a class="btn" href="#offline">Offline</a>
+  </div>
+</section>
+
+<section id="clientes" class="panel two-col-panel">
+  <article>
+    <p class="eyebrow">1. Clientes</p>
+    <h2>Cadastro completo de clientes</h2>
+    <form method="post" action="/gestao/customers" class="stack-form">
+      <input name="name" placeholder="Nome da cliente" required>
+      <input name="phone" placeholder="WhatsApp">
+      <input name="instagram" placeholder="Instagram">
+      <input name="email" placeholder="E-mail">
+      <input name="birthday" placeholder="Aniversário">
+      <textarea name="measurements" placeholder="Medidas: busto, cintura, quadril, calçado..."></textarea>
+      <textarea name="preferences" placeholder="Preferências: estilo, tamanho, marcas, cores..."></textarea>
+      <textarea name="notes" placeholder="Observações"></textarea>
+      <button class="btn primary" type="submit">Salvar cliente</button>
+    </form>
+  </article>
+  <article>
+    <h3>Quem compra mais</h3>
+    <div class="mini-list">
+      {% for c in customer_rank %}
+        <div><strong>{{ c.customer }}</strong><span>{{ c.purchases }} compra(s) • {{ c.total_spent|money }}</span></div>
+      {% else %}
+        <p class="hint">Nenhuma venda registrada ainda.</p>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section id="reservas" class="panel two-col-panel">
+  <article>
+    <p class="eyebrow">2. Reservas</p>
+    <h2>Reserva com prazo</h2>
+    <form method="post" action="/gestao/reservations" class="stack-form">
+      <select name="product_id" required>
+        <option value="">Escolher peça disponível</option>
+        {% for p in products %}
+          <option value="{{ p.id }}">{{ p.code }} • {{ p.title }} • {{ p.sale_price|money }}</option>
+        {% endfor %}
+      </select>
+      <select name="customer_id">
+        <option value="0">Cliente não cadastrada</option>
+        {% for c in customers %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+        {% endfor %}
+      </select>
+      <input name="customer_name" placeholder="Nome se não estiver cadastrada">
+      <input name="expires_at" placeholder="Prazo. Ex.: amanhã 18h ou 2026-06-05 18:00">
+      <textarea name="notes" placeholder="Observações da reserva"></textarea>
+      <button class="btn primary" type="submit">Reservar peça</button>
+    </form>
+  </article>
+  <article>
+    <h3>Reservas recentes</h3>
+    <div class="mini-list">
+      {% for r in reservations %}
+        <div>
+          <strong>{{ r.code }} • {{ r.title }}</strong>
+          <span>{{ r.customer_display or 'Cliente' }} • {{ r.status }} • até {{ r.expires_at or '-' }}</span>
+          {% if r.status == 'ativa' %}
+          <form method="post" action="/gestao/reservations/{{ r.id }}/close" class="inline-actions">
+            <button class="btn ghost" name="action" value="liberar">Liberar</button>
+            <button class="btn ghost" name="action" value="venda">Marcar convertida</button>
+          </form>
+          {% endif %}
+        </div>
+      {% else %}
+        <p class="hint">Nenhuma reserva.</p>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section id="desejos" class="panel two-col-panel">
+  <article>
+    <p class="eyebrow">3. Lista de desejos</p>
+    <h2>O que cada cliente procura</h2>
+    <form method="post" action="/gestao/wishlist" class="stack-form">
+      <select name="customer_id">
+        <option value="0">Cliente não cadastrada</option>
+        {% for c in customers %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+        {% endfor %}
+      </select>
+      <input name="customer_name" placeholder="Nome se não estiver cadastrada">
+      <input name="query" placeholder="Ex.: vestido festa, calça preta, bolsa caramelo" required>
+      <input name="size" placeholder="Tamanho">
+      <input name="brand" placeholder="Marca">
+      <input name="color" placeholder="Cor">
+      <input name="style" placeholder="Estilo">
+      <textarea name="notes" placeholder="Observações"></textarea>
+      <button class="btn primary" type="submit">Salvar desejo</button>
+    </form>
+  </article>
+  <article>
+    <h3>Peças que combinam com desejos</h3>
+    <div class="mini-list">
+      {% for m in wish_matches %}
+        <div>
+          <strong>{{ m.wish.customer_name or m.wish.customer_display or 'Cliente' }} procura: {{ m.wish.query }}</strong>
+          <span>Encontrado: {{ m.product.code }} • {{ m.product.title }} • {{ m.product.sale_price|money }}</span>
+          <a class="btn ghost" href="/products/{{ m.product.id }}">Abrir peça</a>
+        </div>
+      {% else %}
+        <p class="hint">Cadastre desejos para o sistema sugerir peças parecidas.</p>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section id="whatsapp" class="panel">
+  <p class="eyebrow">4. WhatsApp</p>
+  <h2>Mensagens prontas</h2>
+  <p class="hint">Copie a mensagem ou toque para abrir o WhatsApp usando o número cadastrado.</p>
+  <div class="draft-grid">
+    {% for c in customers[:12] %}
+    <article class="draft-card">
+      <strong>{{ c.name }}</strong>
+      <small>{{ c.phone or c.instagram or '-' }}</small>
+      <textarea class="copy-box" id="wpp{{ c.id }}" rows="4">Oi {{ c.name }}! Chegaram novidades no BRECHORISEE que combinam com seu estilo. Quer que eu te envie algumas opções?</textarea>
+      <button class="btn" type="button" data-copy-target="wpp{{ c.id }}">Copiar</button>
+      {% if c.phone %}<a class="btn ghost" href="https://wa.me/{{ c.phone|replace(' ','')|replace('-','')|replace('(','')|replace(')','') }}" target="_blank">Abrir WhatsApp</a>{% endif %}
+    </article>
+    {% else %}
+      <p class="hint">Cadastre clientes para usar mensagens rápidas.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section id="fornecedoras" class="panel">
+  <p class="eyebrow">5. Repasse</p>
+  <h2>Comissão/repasse de fornecedoras</h2>
+  <p class="hint">Use junto com o cadastro de fornecedoras. O sistema mantém base para controlar pendente/pago e calcular repasses por lote ou peça.</p>
+  <a class="btn primary" href="/suppliers">Abrir fornecedoras</a>
+</section>
+
+<section id="financeiro" class="panel two-col-panel">
+  <article>
+    <p class="eyebrow">6. Financeiro completo</p>
+    <h2>Despesas e lucro real</h2>
+    <form method="post" action="/gestao/expenses" class="stack-form">
+      <input name="description" placeholder="Descrição. Ex.: embalagem, anúncio, lavagem..." required>
+      <input name="category" placeholder="Categoria">
+      <input name="amount" type="number" step="0.01" placeholder="Valor" required>
+      <input name="payment_method" placeholder="Forma de pagamento">
+      <button class="btn primary" type="submit">Lançar despesa</button>
+    </form>
+  </article>
+  <article>
+    <h3>Últimas despesas</h3>
+    <div class="mini-list">
+      {% for e in expenses %}
+        <div><strong>{{ e.description }}</strong><span>{{ e.category or '-' }} • {{ e.amount|money }} • {{ e.created_at|date_br }}</span></div>
+      {% else %}
+        <p class="hint">Nenhuma despesa lançada.</p>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section id="promocoes" class="panel">
+  <p class="eyebrow">7. Promoções automáticas</p>
+  <h2>Peças paradas para ação</h2>
+  <div class="product-grid">
+    {% for p in products if loop.index <= 12 %}
+      <article class="product-card">
+        <a class="product-photo" href="/products/{{ p.id }}">
+          {% if p.image_filename %}<img src="{{ url_for('static', path='/uploads/' ~ p.image_filename) }}">{% else %}<span>sem foto</span>{% endif %}
+        </a>
+        <div class="product-body">
+          <strong>{{ p.title }}</strong>
+          <small>{{ p.code }} • sugestão: repostar, vitrine ou desconto progressivo</small>
+          <a class="btn ghost" href="/marketing?product_id={{ p.id }}">Criar post</a>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section id="etiquetas" class="panel">
+  <p class="eyebrow">8. Etiquetas</p>
+  <h2>Etiquetas profissionais</h2>
+  <p>Continue usando a aba Etiquetas. Ela já usa QR Code, código, logo e dados da peça.</p>
+  <a class="btn primary" href="/labels">Abrir etiquetas</a>
+</section>
+
+<section id="backup" class="panel">
+  <p class="eyebrow">9. Backup automático/manual</p>
+  <h2>Backup do banco, fotos, vídeos e conteúdos</h2>
+  <form method="post" action="/gestao/backup">
+    <button class="btn primary" type="submit">Fazer backup agora</button>
+  </form>
+  <p class="hint">O arquivo ZIP fica pronto para baixar. Guarde em pendrive, nuvem ou HD externo.</p>
+</section>
+
+<section id="usuarios" class="panel two-col-panel">
+  <article>
+    <p class="eyebrow">10. Usuários</p>
+    <h2>Perfis de acesso</h2>
+    <form method="post" action="/gestao/users" class="stack-form">
+      <input name="name" placeholder="Nome do usuário" required>
+      <select name="role">
+        <option value="admin">Admin</option>
+        <option value="caixa">Caixa</option>
+        <option value="cadastro">Cadastro</option>
+        <option value="consulta">Consulta</option>
+        <option value="atendente">Atendente</option>
+      </select>
+      <input name="pin" placeholder="PIN/senha simples">
+      <button class="btn primary" type="submit">Salvar usuário</button>
+    </form>
+  </article>
+  <article>
+    <h3>Usuários cadastrados</h3>
+    <div class="mini-list">
+      {% for u in users %}
+        <div><strong>{{ u.name }}</strong><span>{{ u.role }} • {{ 'ativo' if u.active else 'inativo' }}</span></div>
+      {% else %}
+        <p class="hint">Nenhum usuário cadastrado.</p>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section id="vitrine" class="panel">
+  <p class="eyebrow">11. Vitrine inteligente</p>
+  <h2>Peças sugeridas para divulgar</h2>
+  <div class="product-grid">
+    {% for p in vitrine %}
+      <article class="product-card">
+        <a class="product-photo" href="/products/{{ p.id }}">
+          {% if p.image_filename %}<img src="{{ url_for('static', path='/uploads/' ~ p.image_filename) }}">{% else %}<span>sem foto</span>{% endif %}
+        </a>
+        <div class="product-body">
+          <strong>{{ p.title }}</strong>
+          <small>{{ p.code }} • {{ p.margin_value|money }} margem estimada • {{ p.media_count }} mídia(s)</small>
+          <a class="btn primary" href="/marketing?product_id={{ p.id }}">Postar</a>
+        </div>
+      </article>
+    {% else %}
+      <p class="hint">Cadastre peças disponíveis.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section id="campanhas" class="panel two-col-panel">
+  <article>
+    <p class="eyebrow">12. Campanhas</p>
+    <h2>Instagram e WhatsApp</h2>
+    <form method="post" action="/gestao/campaigns" class="stack-form">
+      <input name="name" placeholder="Nome. Ex.: Novidades da semana" required>
+      <input name="channel" placeholder="Canal. Ex.: Instagram/WhatsApp">
+      <textarea name="notes" placeholder="Texto, objetivo, público, peças..."></textarea>
+      <button class="btn primary" type="submit">Criar campanha</button>
+    </form>
+  </article>
+  <article>
+    <h3>Campanhas</h3>
+    <div class="mini-list">
+      {% for c in campaigns %}
+        <div><strong>{{ c.name }}</strong><span>{{ c.channel }} • {{ c.status }}</span></div>
+      {% else %}
+        <p class="hint">Nenhuma campanha.</p>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section id="looks" class="panel">
+  <p class="eyebrow">13. Montador de looks</p>
+  <h2>Combinar peças</h2>
+  <p class="hint">Escolha peças da vitrine inteligente e use o Instagram para criar um post de look. Sugestão: blusa + calça + bolsa + acessório.</p>
+  <a class="btn primary" href="/marketing">Abrir criador Instagram</a>
+</section>
+
+<section id="provador" class="panel">
+  <p class="eyebrow">14. Provador por medidas</p>
+  <h2>Comparar medidas da cliente com medidas da peça</h2>
+  <p class="hint">Cadastre medidas da cliente no módulo Clientes e medidas da peça no cadastro. Use a ficha da peça para comparar busto, cintura, quadril e comprimento.</p>
+</section>
+
+<section id="pesquisas" class="panel">
+  <p class="eyebrow">15. Ranking de interesse</p>
+  <h2>O que as clientes procuram</h2>
+  <div class="mini-list">
+    {% for w in wishes %}
+      <div><strong>{{ w.query }}</strong><span>{{ w.customer_display or w.customer_name or 'Cliente' }} • {{ w.size or '-' }} • {{ w.color or '-' }}</span></div>
+    {% else %}
+      <p class="hint">Cadastre listas de desejos para acompanhar interesse.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section id="lotes" class="panel two-col-panel">
+  <article>
+    <p class="eyebrow">16. Entrada por lote</p>
+    <h2>Lotes de fornecedoras</h2>
+    <form method="post" action="/gestao/batches" class="stack-form">
+      <input name="name" placeholder="Nome do lote. Ex.: Lote Ana junho" required>
+      <select name="supplier_id">
+        <option value="0">Sem fornecedora</option>
+        {% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+      </select>
+      <textarea name="notes" placeholder="Quantidade, acordo, comissão, observações..."></textarea>
+      <button class="btn primary" type="submit">Criar lote</button>
+    </form>
+  </article>
+  <article>
+    <h3>Lotes recentes</h3>
+    <div class="mini-list">
+      {% for b in batches %}
+        <div><strong>{{ b.name }}</strong><span>{{ b.supplier_name or '-' }} • {{ b.created_at|date_br }}</span></div>
+      {% else %}
+        <p class="hint">Nenhum lote.</p>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section id="conferencia" class="panel">
+  <p class="eyebrow">17. Conferência por câmera</p>
+  <h2>Conferir estoque</h2>
+  <p class="hint">Use a aba Peças ou Reconhecer Foto para localizar por QR/código ou foto. A estrutura de auditoria já está no banco para evoluir para conferência item a item.</p>
+  <a class="btn primary" href="/recognize">Conferir por foto/código</a>
+</section>
+
+<section id="trocas" class="panel two-col-panel">
+  <article>
+    <p class="eyebrow">18. Trocas e devoluções</p>
+    <h2>Registrar troca/devolução</h2>
+    <form method="post" action="/gestao/returns" class="stack-form">
+      <input name="customer_name" placeholder="Cliente">
+      <input name="sale_id" type="number" placeholder="ID da venda, se souber">
+      <select name="product_id">
+        <option value="0">Peça, se voltar para estoque</option>
+        {% for p in products %}<option value="{{ p.id }}">{{ p.code }} • {{ p.title }}</option>{% endfor %}
+      </select>
+      <select name="action">
+        <option value="troca">Troca</option>
+        <option value="devolucao">Devolução</option>
+        <option value="credito">Crédito para cliente</option>
+      </select>
+      <textarea name="reason" placeholder="Motivo"></textarea>
+      <button class="btn primary" type="submit">Registrar</button>
+    </form>
+  </article>
+  <article>
+    <h3>Registros</h3>
+    <div class="mini-list">
+      {% for r in returns %}
+        <div><strong>{{ r.customer_name or 'Cliente' }}</strong><span>{{ r.action }} • {{ r.reason or '-' }} • {{ r.created_at|date_br }}</span></div>
+      {% else %}
+        <p class="hint">Nenhuma troca registrada.</p>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section id="recibos" class="panel">
+  <p class="eyebrow">19. Recibos</p>
+  <h2>Recibo de venda</h2>
+  <p>As vendas continuam salvas na aba Vendas. Abra a venda e imprima pelo navegador para recibo simples.</p>
+  <a class="btn primary" href="/sales">Abrir vendas</a>
+</section>
+
+<section id="offline" class="panel">
+  <p class="eyebrow">20. Modo offline</p>
+  <h2>Base preparada para offline/sincronização</h2>
+  <p class="hint">O app Android atual usa o banco local do computador pela rede Wi‑Fi. Esta versão mantém a organização para futura sincronização offline sem apagar dados.</p>
+  <a class="btn primary" href="/android">Configurar app Android</a>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("[data-copy-target]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const el = document.getElementById(btn.dataset.copyTarget);
+      if (!el) return;
+      el.select();
+      try {
+        await navigator.clipboard.writeText(el.value);
+        btn.textContent = "Copiado!";
+        setTimeout(() => btn.textContent = "Copiar", 1200);
+      } catch(e) {
+        document.execCommand("copy");
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

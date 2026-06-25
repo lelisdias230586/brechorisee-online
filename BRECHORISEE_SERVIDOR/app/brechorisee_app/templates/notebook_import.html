@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block page_title %}Caderno por câmera{% endblock %}
+{% block content %}
+<section class="panel hero-panel">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Controle automático do caderno</p>
+      <h2>Fotografe suas anotações e transforme em dados do sistema</h2>
+      <p class="hint">O sistema reconhece cliente, peças, valores, descontos, datas, totais e organiza como vendas históricas após sua conferência.</p>
+    </div>
+    <a class="btn ghost" href="/reports">Ver relatórios</a>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><small>Importações 30 dias</small><strong>{{ summary.imports }}</strong></div>
+    <div class="stat-card"><small>Pendentes de conferência</small><strong>{{ summary.pending }}</strong></div>
+    <div class="stat-card"><small>Aplicadas 30 dias</small><strong>{{ summary.applied }}</strong></div>
+    <div class="stat-card"><small>Valor importado</small><strong>{{ summary.imported_sales_value|money }}</strong></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">1. Captura</p>
+      <h2>Aponte a câmera para a página do caderno</h2>
+      <p class="hint">Use boa luz, alinhe a folha e evite sombra. Para maior exatidão, confira o texto antes de aplicar.</p>
+    </div>
+  </div>
+
+  <div class="camera-import-grid">
+    <div>
+      <div class="camera-toolbar inline-actions">
+        <button class="btn primary" type="button" id="notebookStartCameraBtn">Abrir câmera ao vivo</button>
+        <button class="btn" type="button" id="notebookCaptureBtn" disabled>Capturar página</button>
+        <button class="btn ghost" type="button" id="notebookStopCameraBtn">Parar</button>
+      </div>
+      <video id="notebookVideo" class="qr-video document-camera-video" playsinline muted hidden></video>
+      <canvas id="notebookCanvas" hidden></canvas>
+      <img id="notebookPreview" class="query-image" hidden alt="Prévia da página capturada">
+
+      <form id="notebookImportForm" class="stacked-form" data-allow-double-submit="true">
+        <label class="camera-field">
+          <span class="camera-card">
+            <input id="notebookFileInput" type="file" name="image" accept="image/*" capture="environment">
+            <span class="camera-card-title">📷 Tirar foto ou escolher da galeria</span>
+            <small>Compatível com Android/iPhone/WebView. Se a câmera ao vivo não abrir, use este botão.</small>
+          </span>
+        </label>
+
+        <label>
+          Texto reconhecido / conferência
+          <textarea id="notebookTextManual" name="text_manual" rows="10" placeholder="Após analisar a foto, confira aqui. Também pode colar ou ditar pelo teclado do celular. Exemplo: Sandra (Nova compra) / Vestido floral 69,90 / Total 69,90"></textarea>
+        </label>
+
+        <div class="inline-actions">
+          <button class="btn primary" type="submit">Analisar caderno</button>
+          <button class="btn ghost" type="button" id="notebookClearBtn">Limpar</button>
+        </div>
+      </form>
+    </div>
+
+    <aside class="insight-card">
+      <h3>O que será reconhecido</h3>
+      <ul class="clean-list">
+        <li>Cliente da página ou bloco de compra.</li>
+        <li>Descrição das peças e valores.</li>
+        <li>Descontos, pagamentos, totais e datas.</li>
+        <li>Vendas históricas para relatórios do dia/mês.</li>
+        <li>Peças importadas como vendidas, sem entrar no estoque disponível.</li>
+      </ul>
+      <p class="hint">Por segurança, nada é aplicado automaticamente. Você confirma antes de criar clientes, peças e vendas.</p>
+    </aside>
+  </div>
+</section>
+
+<section class="panel" id="notebookResultPanel" hidden>
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">2. Conferência</p>
+      <h2>Prévia reconhecida</h2>
+      <p class="hint" id="notebookResultHint"></p>
+    </div>
+    <a class="btn primary" id="notebookDetailLink" href="#">Abrir conferência completa</a>
+  </div>
+  <div id="notebookWarnings" class="warning-list"></div>
+  <div class="table-wrap">
+    <table class="compact-table">
+      <thead>
+        <tr>
+          <th>Linha</th>
+          <th>Tipo</th>
+          <th>Cliente</th>
+          <th>Peça</th>
+          <th>Valor</th>
+          <th>Data</th>
+          <th>Conf.</th>
+        </tr>
+      </thead>
+      <tbody id="notebookPreviewRows"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Histórico</p>
+      <h2>Últimas importações</h2>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table class="compact-table">
+      <thead><tr><th>ID</th><th>Data</th><th>Status</th><th>Confiança</th><th>Ações</th></tr></thead>
+      <tbody>
+        {% for row in summary.recent %}
+        <tr>
+          <td>#{{ row.id }}</td>
+          <td>{{ row.created_at }}</td>
+          <td><span class="badge">{{ row.status }}</span></td>
+          <td>{{ '%.0f'|format((row.confidence or 0) * 100) }}%</td>
+          <td><a class="btn small" href="/caderno/importacoes/{{ row.id }}">Abrir</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">Nenhuma importação ainda.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const video = document.getElementById("notebookVideo");
+  const canvas = document.getElementById("notebookCanvas");
+  const preview = document.getElementById("notebookPreview");
+  const startBtn = document.getElementById("notebookStartCameraBtn");
+  const stopBtn = document.getElementById("notebookStopCameraBtn");
+  const captureBtn = document.getElementById("notebookCaptureBtn");
+  const fileInput = document.getElementById("notebookFileInput");
+  const textInput = document.getElementById("notebookTextManual");
+  const form = document.getElementById("notebookImportForm");
+  const resultPanel = document.getElementById("notebookResultPanel");
+  const resultHint = document.getElementById("notebookResultHint");
+  const detailLink = document.getElementById("notebookDetailLink");
+  const rowsBox = document.getElementById("notebookPreviewRows");
+  const warningsBox = document.getElementById("notebookWarnings");
+  let stream = null;
+  let capturedBlob = null;
+
+  function money(value) {
+    if (value === null || value === undefined || value === "") return "";
+    try { return Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
+    catch { return value; }
+  }
+
+  function stopCamera() {
+    if (stream) stream.getTracks().forEach(track => track.stop());
+    stream = null;
+    if (video) {
+      video.pause();
+      video.srcObject = null;
+      video.hidden = true;
+    }
+    if (captureBtn) captureBtn.disabled = true;
+  }
+
+  startBtn?.addEventListener("click", async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      alert("Câmera ao vivo indisponível neste navegador. Use o botão de foto/galeria.");
+      return;
+    }
+    try {
+      stopCamera();
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false
+      });
+      video.srcObject = stream;
+      video.hidden = false;
+      await video.play();
+      captureBtn.disabled = false;
+    } catch (err) {
+      alert("Não consegui abrir a câmera. Verifique permissão ou use foto/galeria.");
+    }
+  });
+
+  stopBtn?.addEventListener("click", stopCamera);
+
+  captureBtn?.addEventListener("click", () => {
+    if (!video || !canvas || !stream) return;
+    const w = video.videoWidth || 1280;
+    const h = video.videoHeight || 720;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, w, h);
+    canvas.toBlob(blob => {
+      capturedBlob = blob;
+      if (preview) {
+        preview.src = URL.createObjectURL(blob);
+        preview.hidden = false;
+      }
+    }, "image/jpeg", 0.92);
+  });
+
+  fileInput?.addEventListener("change", () => {
+    capturedBlob = null;
+    const file = fileInput.files && fileInput.files[0];
+    if (!file || !file.type.startsWith("image/")) return;
+    preview.src = URL.createObjectURL(file);
+    preview.hidden = false;
+  });
+
+  document.getElementById("notebookClearBtn")?.addEventListener("click", () => {
+    capturedBlob = null;
+    if (fileInput) fileInput.value = "";
+    if (preview) preview.hidden = true;
+    if (textInput) textInput.value = "";
+    if (resultPanel) resultPanel.hidden = true;
+  });
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const data = new FormData();
+    const selected = fileInput?.files && fileInput.files[0];
+    if (capturedBlob) data.append("image", capturedBlob, "caderno-camera.jpg");
+    else if (selected) data.append("image", selected, selected.name || "caderno.jpg");
+    data.append("text_manual", textInput?.value || "");
+    data.append("source", capturedBlob ? "camera_ao_vivo" : "camera_upload");
+
+    resultHint.textContent = "Analisando...";
+    resultPanel.hidden = false;
+    rowsBox.innerHTML = "";
+    warningsBox.innerHTML = "";
+
+    try {
+      const resp = await fetch("/api/caderno/analisar", { method: "POST", body: data });
+      const json = await resp.json();
+      if (!resp.ok || !json.ok) throw new Error(json.detail || json.message || "Falha ao analisar.");
+      if (json.text && textInput) textInput.value = json.text;
+      detailLink.href = json.detail_url;
+      const summary = json.parsed?.summary || {};
+      resultHint.textContent = `Cliente(s): ${summary.customers || 0} • Peças: ${summary.sale_items || 0} • Total estimado: ${money(summary.net_estimated || 0)} • Confiança: ${Math.round((json.parsed?.confidence || 0) * 100)}%`;
+      (json.warnings || []).forEach(msg => {
+        const p = document.createElement("p");
+        p.className = "alert-warning";
+        p.textContent = msg;
+        warningsBox.appendChild(p);
+      });
+      const entries = (json.parsed?.entries || []).filter(e => ["sale_item","discount","subtotal","payment"].includes(e.entry_type)).slice(0, 30);
+      if (!entries.length) rowsBox.innerHTML = "<tr><td colspan='7'>Nenhuma linha estruturada. Confira o texto e tente novamente.</td></tr>";
+      entries.forEach(e => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${e.line_no || ""}</td><td>${e.entry_type || ""}</td><td>${e.customer_name || ""}</td><td>${e.product_title || e.raw_line || ""}</td><td>${money(e.amount)}</td><td>${e.date_text || ""}</td><td>${Math.round((e.confidence || 0) * 100)}%</td>`;
+        rowsBox.appendChild(tr);
+      });
+    } catch (err) {
+      resultHint.textContent = "Erro: " + (err.message || err);
+    }
+  });
+})();
+</script>
+{% endblock %}

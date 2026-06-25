@@ -1,0 +1,9 @@
+Primeira versão preparada para Google Play.
+
+- App cliente com vitrine, live e carrinho
+- Peça atual da live em tempo real
+- Card flutuante opcional para acompanhar a live no Instagram
+- Reserva com 1 toque e fila de espera
+- Sacola/carrinho da live
+- Tutorial animado de uso do app e site
+- Links públicos de privacidade, termos, suporte e exclusão de dados

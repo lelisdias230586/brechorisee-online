@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block page_title %}Usar no celular{% endblock %}
+{% block content %}
+<section class="panel hero-panel mobile-setup-hero">
+  <div>
+    <p class="eyebrow">Modo celular completo</p>
+    <h2>Cadastre, fotografe, pesquise, venda e acompanhe tudo pelo telefone.</h2>
+    <p>
+      Deixe este computador ligado com o sistema aberto. No celular, conecte na mesma rede Wi‑Fi e abra o endereço abaixo.
+      Depois você pode adicionar à tela inicial para ficar como um aplicativo.
+    </p>
+    <div class="phone-url-box">
+      <span>Endereço para abrir no celular</span>
+      <strong id="phoneUrl">{{ phone_url }}</strong>
+      <button class="btn primary" id="copyPhoneUrlBtn" type="button">Copiar endereço</button>
+    </div>
+    <div class="inline-actions">
+      <a class="btn primary" href="/products/new">Cadastrar com foto</a>
+      <a class="btn" href="/cashier">Abrir caixa</a>
+      <a class="btn ghost" href="/recognize">Reconhecer foto</a>
+      <a class="btn ghost" href="/android">App Android BRECHORISEE</a>
+    </div>
+  </div>
+  <div class="feature-stack">
+    <span>📸 cadastro com câmera do celular</span>
+    <span>🔎 busca por digitação em peças, caixa e reconhecimento</span>
+    <span>🎙️ digitação por voz e listas rápidas nos campos</span>
+    <span>🏷️ QR/código curto: um nome e um número</span>
+    <span>🧾 caixa e baixa direto no telefone</span>
+    <span>📱 app Android nativo conectado ao banco local</span>
+    <span>📊 gráficos e histórico responsivos</span>
+  </div>
+</section>
+
+<section class="mobile-feature-grid">
+  <article class="panel mobile-feature-card">
+    <h3>1. Abrir no celular</h3>
+    <p>Use o endereço <strong>{{ phone_url }}</strong>. O computador e o celular precisam estar no mesmo Wi‑Fi.</p>
+  </article>
+  <article class="panel mobile-feature-card">
+    <h3>2. Cadastrar peça</h3>
+    <p>Em “Cadastrar peça”, toque em <strong>Tirar foto da peça</strong>. Depois use as listas rápidas ou o botão 🎙️ para preencher sem digitar tudo.</p>
+  </article>
+  <article class="panel mobile-feature-card">
+    <h3>3. Caixa pelo celular</h3>
+    <p>No caixa, adicione por busca digitada, código digitado, scanner ao vivo quando disponível ou foto da peça sem etiqueta para reconhecimento.</p>
+  </article>
+  <article class="panel mobile-feature-card">
+    <h3>4. Instalar como app</h3>
+    <p>No Android, toque no botão “Instalar app” ou use o menu do Chrome. No iPhone, use Compartilhar → Adicionar à Tela de Início.</p>
+  </article>
+</section>
+
+<section class="panel mobile-camera-note">
+  <p class="eyebrow">Câmeras no navegador</p>
+  <h2>Fluxo principal sem depender de internet</h2>
+  <p>
+    Foto de peça e reconhecimento usam o seletor de câmera do próprio celular. Já scanner ao vivo de QR/código depende do suporte do navegador
+    e das permissões de câmera. Se o scanner ao vivo não abrir, o sistema continua funcionando por busca digitada, código digitado e por foto.
+  </p>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.querySelector("#copyPhoneUrlBtn");
+  const url = document.querySelector("#phoneUrl")?.textContent?.trim();
+  if (!btn || !url) return;
+  btn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      btn.textContent = "Copiado";
+      setTimeout(() => btn.textContent = "Copiar endereço", 1600);
+    } catch (err) {
+      btn.textContent = "Copie manualmente";
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "public_store_base.html" %}
+{% block store_content %}
+<section class="store-hero-modern customer-dashboard">
+  <div class="hero-copy">
+    <p class="eyebrow">Novidades no app</p>
+    <h1>Oi, {{ account.name }} ✨</h1>
+    <p>Suas novidades aparecem aqui com calma, respeitando a periodicidade escolhida para não ficar massante.</p>
+    <div class="inline-actions">
+      <a class="btn primary" href="/cliente/vitrine">Ver vitrine</a>
+      <a class="btn ghost" href="/loja/carrinho">Minha sacola</a>
+    </div>
+  </div>
+  <div class="hero-card">
+    <strong>{{ notifications|length }}</strong>
+    <span>avisos recentes</span>
+    <small>WhatsApp: {{ account.phone }}</small>
+  </div>
+</section>
+
+<section class="panel customer-notification-settings">
+  <div class="section-head no-margin">
+    <div>
+      <p class="eyebrow">Preferências</p>
+      <h2>Como quer receber novidades?</h2>
+      <p class="hint">A opção recomendada é “Moderado”, para receber novidades sem excesso.</p>
+    </div>
+  </div>
+  <form method="post" action="/cliente/novidades/configurar" class="form-grid compact-form">
+    <label class="check-line">
+      <input type="checkbox" name="enabled" value="1" {{ 'checked' if settings.enabled else '' }}>
+      Receber novidades no app/online
+    </label>
+    <label>
+      Frequência
+      <select name="frequency">
+        <option value="imediato" {{ 'selected' if settings.frequency == 'imediato' else '' }}>Sempre que chegar peça nova</option>
+        <option value="moderado" {{ 'selected' if settings.frequency == 'moderado' else '' }}>Moderado, no máximo a cada 12 horas</option>
+        <option value="diario" {{ 'selected' if settings.frequency == 'diario' else '' }}>Resumo diário</option>
+        <option value="semanal" {{ 'selected' if settings.frequency == 'semanal' else '' }}>Resumo semanal</option>
+      </select>
+    </label>
+    <label class="check-line">
+      <input type="checkbox" name="channel_whatsapp" value="1" {{ 'checked' if settings.channel_whatsapp else '' }}>
+      Também aceito receber sugestão pelo WhatsApp
+    </label>
+    <button class="btn primary" type="submit">Salvar preferências</button>
+  </form>
+</section>
+
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Novidades</p>
+    <h2>Peças e lives para você</h2>
+  </div>
+</section>
+
+<section class="notification-list">
+  {% for n in notifications %}
+    <article class="notification-card">
+      {% if n.image_filename %}
+        <img src="{{ url_for('static', path='/uploads/' ~ n.image_filename) }}" alt="{{ n.title }}">
+      {% endif %}
+      <div>
+        <strong>{{ n.title }}</strong>
+        <p>{{ n.message }}</p>
+        <small>{{ n.created_at|date_br }} • {{ n.product_status or 'peça' }}</small>
+        <div class="inline-actions">
+          {% if n.notification_type == 'live_started' %}
+            <a class="btn primary" href="{{ n.action_url or '/cliente/live' }}">Entrar na live</a>
+          {% elif n.product_code %}
+            <a class="btn primary" href="/cliente/peca/{{ n.product_code }}">Ver peça</a>
+          {% endif %}
+          {% if n.product_code %}
+            <a class="btn ghost" href="/loja/produto/{{ n.product_code }}">Abrir vitrine pública</a>
+          {% endif %}
+        </div>
+      </div>
+    </article>
+  {% else %}
+    <div class="empty-state">
+      <h3>Nenhuma novidade ainda.</h3>
+      <p>Quando novas peças forem cadastradas, você receberá os avisos aqui de acordo com sua periodicidade.</p>
+    </div>
+  {% endfor %}
+</section>
+{% endblock %}

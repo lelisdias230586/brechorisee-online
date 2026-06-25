@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block page_title %}IA moda do brechorisee{% endblock %}
+{% block content %}
+<section class="panel hero-panel">
+  <div>
+    <p class="eyebrow">Assistente IA local</p>
+    <h2>Descubra o que tende a girar, o que está parado e o que merece vitrine.</h2>
+    <p>
+      Esta IA não acessa a internet: ela cruza o histórico do brechorisee, tempo de estoque,
+      margem, vendas de peças parecidas e palavras configuradas em <code>ai_config.json</code>.
+      Assim você controla a moda da sua loja e pode atualizar os critérios quando quiser.
+    </p>
+    <div class="inline-actions">
+      <a class="btn primary" href="/products/new">Analisar nova peça</a>
+      <a class="btn" href="/stock-history">Tempo estocado</a>
+      <a class="btn ghost" href="/reports">Gráficos</a>
+    </div>
+  </div>
+  <div class="feature-stack">
+    <span>📈 tendência interna</span>
+    <span>⏳ risco de estoque parado</span>
+    <span>💸 margem e preço</span>
+    <span>🪄 ações sugeridas</span>
+  </div>
+</section>
+
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Boas apostas</p>
+    <h2>Peças com maior pontuação</h2>
+  </div>
+</section>
+<div class="insight-grid">
+  {% for item in summary.trending %}
+    {% set p = item.product %}
+    {% set ai = item.ai %}
+    <article class="panel insight-card">
+      <div class="ai-score-row">
+        <strong>{{ ai.score }}%</strong>
+        <span>{{ ai.label }}</span>
+      </div>
+      <h3><a href="/products/{{ p.id }}">{{ p.title }}</a></h3>
+      <p>{{ p.code }} • {{ p.garment_type or p.category or '-' }} • {{ p.sale_price|money }}</p>
+      <small>{{ ai.reasons[0] if ai.reasons else 'Sem observações.' }}</small>
+    </article>
+  {% else %}
+    <div class="empty-state">Cadastre peças para gerar sugestões.</div>
+  {% endfor %}
+</div>
+
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Atenção</p>
+    <h2>Peças com mais tempo no estoque</h2>
+  </div>
+</section>
+<div class="insight-grid">
+  {% for item in summary.slow %}
+    {% set p = item.product %}
+    {% set ai = item.ai %}
+    <article class="panel insight-card">
+      <div class="ai-score-row">
+        <strong>{{ ai.age_days }} dias</strong>
+        <span>{{ ai.label }}</span>
+      </div>
+      <h3><a href="/products/{{ p.id }}">{{ p.title }}</a></h3>
+      <p>{{ p.code }} • {{ p.garment_type or p.category or '-' }} • {{ p.sale_price|money }}</p>
+      <small>{{ ai.actions[0] if ai.actions else 'Acompanhar.' }}</small>
+    </article>
+  {% else %}
+    <div class="empty-state">Nenhuma peça disponível/reservada para avaliar.</div>
+  {% endfor %}
+</div>
+
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Aprendizado</p>
+    <h2>Peças que venderam rápido</h2>
+  </div>
+</section>
+<div class="insight-grid">
+  {% for item in summary.sold_fast %}
+    {% set p = item.product %}
+    <article class="panel insight-card">
+      <div class="ai-score-row">
+        <strong>{{ item.age_days }} dias</strong>
+        <span>giro rápido</span>
+      </div>
+      <h3><a href="/products/{{ p.id }}">{{ p.title }}</a></h3>
+      <p>{{ p.code }} • {{ p.garment_type or p.category or '-' }} • {{ p.sale_price|money }}</p>
+    </article>
+  {% else %}
+    <div class="empty-state">Quando houver vendas rápidas, elas aparecerão aqui.</div>
+  {% endfor %}
+</div>
+{% endblock %}

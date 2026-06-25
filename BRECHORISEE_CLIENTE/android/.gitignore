@@ -1,0 +1,13 @@
+/.gradle/
+/build/
+/app/build/
+/tools/
+*.apk
+/local.properties
+# Google Play / assinatura local — nunca enviar para GitHub
+keystore.properties
+*.jks
+*.keystore
+play_store_upload/
+BRECHORISEE_CLIENTE_GOOGLE_PLAY.aab
+BRECHORISEE_CLIENTE_RELEASE.apk

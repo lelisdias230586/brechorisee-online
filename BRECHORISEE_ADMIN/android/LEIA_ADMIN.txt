@@ -1,0 +1,11 @@
+BRECHORISEE Admin
+
+Este projeto gera o APK BRECHORISEE_ADMIN.apk.
+
+Nuvem padrão:
+https://brechorisee-online.onrender.com
+
+Uso: somente administradora. Acesso ao sistema completo protegido pelo login/admin do site.
+
+Compilar no Windows:
+COMPILAR_APK_WINDOWS.bat
