@@ -2,11 +2,11 @@
   "ok": true,
   "app": "BRECHORISEE",
   "version": "5.4.7_auto_recovery",
-  "public_url": "https://kygii-177-52-123-11.free.pinggy.net",
-  "cliente_url": "https://kygii-177-52-123-11.free.pinggy.net/cliente/inicio",
-  "admin_url": "https://kygii-177-52-123-11.free.pinggy.net/admin-acesso",
-  "checkout_url": "https://kygii-177-52-123-11.free.pinggy.net/checkout-v5",
-  "apk_url": "https://kygii-177-52-123-11.free.pinggy.net/apk",
-  "updated_at": "2026-06-27T15:08:24-03:00",
+  "public_url": "https://teygj-177-52-123-11.free.pinggy.net",
+  "cliente_url": "https://teygj-177-52-123-11.free.pinggy.net/cliente/inicio",
+  "admin_url": "https://teygj-177-52-123-11.free.pinggy.net/admin-acesso",
+  "checkout_url": "https://teygj-177-52-123-11.free.pinggy.net/checkout-v5",
+  "apk_url": "https://teygj-177-52-123-11.free.pinggy.net/apk",
+  "updated_at": "2026-06-27T15:15:00-03:00",
   "source": "termux-watchdog"
 }
