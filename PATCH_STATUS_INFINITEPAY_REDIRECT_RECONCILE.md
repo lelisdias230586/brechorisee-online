@@ -38,3 +38,12 @@ Sincronizar para este repositório a árvore atual do runtime do F3, no mínimo:
 - CSS/JS compartilhados tocados pelo fluxo do pedido, se houver
 
 Somente depois aplicar patch e testes em branch; deploy continua exigindo autorização separada.
+
+## Artefatos de engenharia já preparados
+
+No branch `sync/runtime-prod-2026-09-07`:
+
+- `FIN_E2E_R7K_R2_EVIDENCE_2026-09-07.md`
+- `FIN_E2E_R7K_R2_TEST_MATRIX_2026-09-07.md`
+
+Eles registram as invariantes financeiras e a matriz de regressão obrigatória antes de qualquer deploy.
