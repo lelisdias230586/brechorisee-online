@@ -1,0 +1,289 @@
+--- a/app/brechorisee_app/templates/base.html
++++ b/app/brechorisee_app/templates/base.html
+@@ -404,7 +404,7 @@
+ 
+   <script src="{{ url_for('static', path='/js/app.js') }}?v=menu-mobile-r2"></script>
+   <script src="{{ url_for('static', path='/js/mobile-camera.js') }}?v=3.2-autofill-resiliente"></script>
+-  <script src="{{ url_for('static', path='/js/admin-order-notifications.js') }}?v=5.6.0"></script>
++  <script src="{{ url_for('static', path='/js/admin-order-notifications.js') }}?v=5.6.1"></script>
+   <script src="{{ url_for('static', path='/js/brechorisee-ux-491.js') }}?v=4.9.1"></script>
+   <script>
+     window.addEventListener('DOMContentLoaded', () => {
+--- a/app/brechorisee_app/templates/online_order.html
++++ b/app/brechorisee_app/templates/online_order.html
+@@ -64,7 +64,7 @@
+                 <ol class="order-steps">
+                   <li><span>1. Confira o total do pedido</span></li>
+-                  <li><span>2. Toque em <strong>Pagar agora</strong> para abrir a InfinitePay</span></li>
++                  <li><span>2. Toque em&nbsp;<strong>Pagar agora</strong>&nbsp;para abrir a InfinitePay</span></li>
+                   <li><span>3. Finalize o pagamento na InfinitePay</span></li>
+                   <li><span>4. Volte para acompanhar a confirmação</span></li>
+                 </ol>
+--- a/app/brechorisee_app/templates/products.html
++++ b/app/brechorisee_app/templates/products.html
+@@ -4,6 +4,7 @@
+ {% block extra_head %}
+   <link rel="stylesheet" href="{{ url_for('static', path='/css/brechorisee-modern-v1.css') }}?v=1.0.0">
+   <link rel="stylesheet" href="{{ url_for('static', path='/css/marketplace-vitrine-v1.css') }}?v=1.2.0">
++  <link rel="stylesheet" href="{{ url_for('static', path='/css/admin-products-mobile-v1.css') }}?v=1.0.0">
+ {% endblock %}
+@@ -77,5 +78,5 @@
+ {% block scripts %}
+   <script src="{{ url_for('static', path='/js/marketplace-vitrine-v1.js') }}?v=1.2.3"></script>
+ {% endblock %}
+--- a/app/brechorisee_app/static/js/admin-order-notifications.js
++++ b/app/brechorisee_app/static/js/admin-order-notifications.js
+@@ -37,20 +37,23 @@
+     btn.textContent = '🔔 Ativar avisos de pedidos';
+     btn.style.cssText = [
+-      'position:fixed',
+-      'left:14px',
+-      'right:14px',
+-      'bottom:calc(14px + env(safe-area-inset-bottom,0px))',
+-      'z-index:999999',
++      'position:relative',
++      'display:block',
++      'width:100%',
++      'max-width:100%',
++      'margin:0 0 14px 0',
++      'z-index:1',
+       'border:none',
+       'border-radius:16px',
+       'padding:13px 16px',
+       'background:#2d211d',
+       'color:#fff',
+       'font-weight:800',
+       'font-size:15px',
+-      'box-shadow:0 10px 28px rgba(0,0,0,.28)'
++      'box-shadow:0 6px 18px rgba(0,0,0,.12)'
+     ].join(';');
+ 
+@@ -65,7 +68,18 @@
+       });
+     });
+ 
+-    document.body.appendChild(btn);
++    const main = document.querySelector('main.main, main');
++    const topbar = main && main.querySelector(':scope > .topbar');
++
++    if (main && topbar) {
++      topbar.insertAdjacentElement('afterend', btn);
++    } else if (main) {
++      main.prepend(btn);
++    } else {
++      document.body.prepend(btn);
++    }
+   }
+ 
+   async function init() {
+--- a/app/brechorisee_app/static/js/marketplace-vitrine-v1.js
++++ b/app/brechorisee_app/static/js/marketplace-vitrine-v1.js
+@@ -203,7 +203,8 @@
+       card.hidden = !show;
+       if (show) visible += 1;
+     });
+-    if (empty) empty.hidden = visible !== 0;
++    const serverEmpty = grid.querySelector('.brm-server-empty');
++    if (empty) empty.hidden = Boolean(serverEmpty) || visible !== 0;
+     updateResultCount(visible);
+   }
+--- a/app/brechorisee_app/templates/products.html
++++ b/app/brechorisee_app/templates/products.html
+@@ -77,5 +77,5 @@
+ {% block scripts %}
+-  <script src="{{ url_for('static', path='/js/marketplace-vitrine-v1.js') }}?v=1.2.3"></script>
++  <script src="{{ url_for('static', path='/js/marketplace-vitrine-v1.js') }}?v=1.2.4"></script>
+ {% endblock %}
+--- /dev/null
++++ b/app/brechorisee_app/static/css/admin-products-mobile-v1.css
+@@ -0,0 +1,194 @@
++/*
++ * BRECHORISEE Admin Products — mobile safety layer
++ * Scope intentionally limited to the administrative catalogue.
++ */
++
++.brm-admin-head,
++.brm-admin-server-search,
++.brm-admin-marketplace,
++.brm-admin-marketplace * {
++  box-sizing: border-box;
++  min-width: 0;
++}
++
++.brm-admin-server-search .search-row > * {
++  min-width: 0;
++}
++
++.brm-admin-marketplace .brm-toolbar,
++.brm-admin-marketplace .brm-search,
++.brm-admin-marketplace .brm-tabs,
++.brm-admin-marketplace .brm-result-row {
++  max-width: 100%;
++}
++
++@media (max-width: 820px) {
++  .brm-admin-head {
++    display: grid;
++    grid-template-columns: minmax(0, 1fr);
++    gap: 12px;
++    align-items: start;
++  }
++
++  .brm-admin-head .btn,
++  .brm-admin-head > a.btn {
++    width: 100%;
++    justify-content: center;
++  }
++
++  .brm-admin-server-search .search-row {
++    display: grid;
++    grid-template-columns: minmax(0, 1fr);
++    gap: 10px;
++    width: 100%;
++  }
++
++  .brm-admin-server-search .quick-input-wrap,
++  .brm-admin-server-search input,
++  .brm-admin-server-search select,
++  .brm-admin-server-search button {
++    width: 100%;
++    max-width: 100%;
++  }
++
++  .brm-admin-marketplace .brm-toolbar {
++    position: relative;
++    top: auto;
++    overflow: visible;
++    padding: 12px 0 8px;
++  }
++
++  .brm-admin-marketplace .brm-search {
++    display: grid;
++    grid-template-columns: 30px minmax(0, 1fr) 46px;
++    gap: 8px;
++    align-items: center;
++    width: 100%;
++    overflow: visible;
++  }
++
++  .brm-admin-marketplace .brm-search > span:first-child {
++    width: 30px;
++    display: grid;
++    place-items: center;
++  }
++
++  .brm-admin-marketplace .brm-search > .quick-input-wrap {
++    display: grid;
++    grid-template-columns: minmax(0, 1fr) 38px;
++    width: 100%;
++    min-width: 0;
++  }
++
++  .brm-admin-marketplace .brm-search > .quick-input-wrap > input {
++    width: 100%;
++    min-width: 0;
++  }
++
++  .brm-admin-marketplace .brm-search .voice-input-btn {
++    width: 38px;
++    min-width: 38px;
++    padding-left: 0;
++    padding-right: 0;
++  }
++
++  .brm-admin-marketplace .brm-filter-button {
++    width: 46px;
++    min-width: 46px;
++    padding: 9px 7px;
++    justify-content: center;
++  }
++
++  .brm-admin-marketplace .brm-filter-button span:last-child {
++    display: none;
++  }
++
++  .brm-admin-marketplace .brm-tabs {
++    display: flex;
++    flex-wrap: nowrap;
++    gap: 8px;
++    width: 100%;
++    overflow-x: auto;
++    overflow-y: hidden;
++    -webkit-overflow-scrolling: touch;
++    scrollbar-width: thin;
++    padding: 4px 1px 8px;
++    scroll-padding-inline: 1px;
++  }
++
++  .brm-admin-marketplace .brm-tabs > button,
++  .brm-admin-marketplace .brm-tabs > a {
++    flex: 0 0 auto;
++    white-space: nowrap;
++  }
++
++  .brm-admin-marketplace .brm-result-row {
++    display: flex;
++    flex-wrap: wrap;
++    gap: 7px 12px;
++    align-items: center;
++  }
++
++  .brm-admin-marketplace .brm-result-row > * {
++    max-width: 100%;
++    overflow-wrap: anywhere;
++  }
++
++  .brm-admin-grid .brm-media {
++    aspect-ratio: 4 / 5;
++    height: auto;
++    overflow: hidden;
++  }
++
++  .brm-admin-grid .brm-media img,
++  .brm-admin-grid .brm-carousel-slide {
++    width: 100%;
++    height: 100%;
++    object-fit: cover;
++    object-position: center top;
++  }
++
++  .brm-admin-grid .brm-admin-actions {
++    display: grid;
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++    gap: 8px;
++  }
++
++  .brm-admin-grid .brm-admin-actions > * {
++    width: 100%;
++    min-width: 0;
++    text-align: center;
++    justify-content: center;
++    overflow-wrap: anywhere;
++  }
++
++  .brm-admin-grid .brm-admin-actions .brm-share,
++  .brm-admin-grid .brm-admin-actions > :nth-child(3) {
++    grid-column: 1 / -1;
++  }
++}
++
++@media (max-width: 380px) {
++  .brm-admin-marketplace .brm-search {
++    grid-template-columns: 28px minmax(0, 1fr) 42px;
++    gap: 6px;
++  }
++
++  .brm-admin-marketplace .brm-filter-button {
++    width: 42px;
++    min-width: 42px;
++  }
++
++  .brm-admin-marketplace .brm-search > .quick-input-wrap {
++    grid-template-columns: minmax(0, 1fr) 36px;
++  }
++
++  .brm-admin-marketplace .brm-search .voice-input-btn {
++    width: 36px;
++    min-width: 36px;
++  }
++}
