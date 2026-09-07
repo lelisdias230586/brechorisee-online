@@ -1,0 +1,1663 @@
+--- a/app/brechorisee_app/app.py
++++ b/app/brechorisee_app/app.py
+@@ -3207,9 +3207,16 @@
+         # e também após ações importantes sem exigir botão.
+         path = str(request.url.path or "")
+ 
+-        # Webhook de pagamento não deve disparar sincronização,
+-        # backup GitHub ou outros efeitos pós-request.
+-        if path == "/api/webhooks/infinitepay":
++        # Webhook e fallback de redirect de pagamento não devem disparar
++        # sincronização, backup GitHub ou outros efeitos pós-request.
++        # BRECHORISEE_INFINITEPAY_REDIRECT_RECONCILE_NO_AUTOSYNC_R7L
++        skip_auto_sync = bool(
++            getattr(
++                request.state,
++                "brechorisee_skip_auto_sync",
++                False,
++            )
++        )
++        if path == "/api/webhooks/infinitepay" or skip_auto_sync:
+             return response
+ 
+         if cloud_sync_url() and not path.startswith("/static") and not path.startswith("/api/android/sync"):
+@@ -13657,6 +13664,14 @@
+         conflict_con.close()
+ 
+ 
++def _infinitepay_reconcile_payment(
++    *,
++    order_nsu: str,
++    transaction_nsu: str,
++    invoice_slug: str,
++    capture_method: str = "",
++    webhook_amount_raw: Any = None,
++    webhook_paid_amount_raw: Any = None,
++    finalizer_source_label: str = "infinitepay_webhook_verified",
++) -> JSONResponse:
++    """Verifica e finaliza um pagamento InfinitePay de forma idempotente."""
++
++    order_nsu = _infinitepay_webhook_text(
++        order_nsu,
++        200,
++    )
++
++    transaction_nsu = _infinitepay_webhook_text(
++        transaction_nsu,
++        300,
++    )
++
++    invoice_slug = _infinitepay_webhook_text(
++        invoice_slug,
++        300,
++    )
++
++    capture_method = _infinitepay_webhook_text(
++        capture_method,
++        80,
++    )
++
++    if not order_nsu:
++        return JSONResponse(
++            {
++                "success": False,
++                "message": "order_nsu ausente.",
++            },
++            status_code=400,
++        )
++
++    if not transaction_nsu:
++        return JSONResponse(
++            {
++                "success": False,
++                "message": "transaction_nsu ausente.",
++            },
++            status_code=400,
++        )
++
++    if not invoice_slug:
++        return JSONResponse(
++            {
++                "success": False,
++                "message": "invoice_slug ausente.",
++            },
++            status_code=400,
++        )
++
++    # Primeira leitura local.
++    # A conexão é encerrada logicamente antes da chamada HTTP externa.
++    with get_db() as con:
++        required_columns = {
++            "infinitepay_order_nsu",
++            "infinitepay_transaction_nsu",
++            "infinitepay_invoice_slug",
++            "payment_status",
++            "payment_confirmed_by",
++        }
++
++        columns = set(
++            table_columns(
++                con,
++                "online_orders",
++            )
++        )
++
++        if not required_columns.issubset(columns):
++            return JSONResponse(
++                {
++                    "success": False,
++                    "message": "Estrutura de pagamento indisponível.",
++                },
++                status_code=400,
++            )
++
++        matches = con.execute(
++            """
++            SELECT *
++            FROM online_orders
++            WHERE infinitepay_order_nsu=?
++            LIMIT 2
++            """,
++            (order_nsu,),
++        ).fetchall()
++
++        if len(matches) != 1:
++            return JSONResponse(
++                {
++                    "success": False,
++                    "message": "Pedido InfinitePay não localizado de forma única.",
++                },
++                status_code=400,
++            )
++
++        order = matches[0]
++        order_id = int(order["id"])
++
++        stored_transaction = _infinitepay_webhook_text(
++            row_get(
++                order,
++                "infinitepay_transaction_nsu",
++                "",
++            ),
++            300,
++        )
++
++        stored_slug = _infinitepay_webhook_text(
++            row_get(
++                order,
++                "infinitepay_invoice_slug",
++                "",
++            ),
++            300,
++        )
++
++        payment_status = _infinitepay_webhook_text(
++            row_get(
++                order,
++                "payment_status",
++                "",
++            ),
++            80,
++        ).lower()
++
++        order_status = _infinitepay_webhook_text(
++            row_get(
++                order,
++                "status",
++                "",
++            ),
++            80,
++        ).lower()
++
++        # Pagamento já confirmado com a mesma identidade.
++        if (
++            payment_status == "confirmado"
++            and stored_transaction == transaction_nsu
++            and (
++                not stored_slug
++                or stored_slug == invoice_slug
++            )
++        ):
++            return JSONResponse(
++                {
++                    "success": True,
++                    "confirmed": True,
++                    "idempotent": True,
++                },
++                status_code=200,
++            )
++
++        if stored_transaction and (
++            stored_transaction != transaction_nsu
++        ):
++            return JSONResponse(
++                {
++                    "success": False,
++                    "message": "Pedido já vinculado a outra transação.",
++                },
++                status_code=400,
++            )
++
++        if stored_slug and stored_slug != invoice_slug:
++            return JSONResponse(
++                {
++                    "success": False,
++                    "message": "Pedido já vinculado a outra cobrança.",
++                },
++                status_code=400,
++            )
++
++        if order_status in {
++            "cancelado",
++            "conflito",
++        }:
++            return JSONResponse(
++                {
++                    "success": False,
++                    "message": "Pedido não aceita confirmação neste estado.",
++                },
++                status_code=400,
++            )
++
++        duplicate_transaction = con.execute(
++            """
++            SELECT id
++            FROM online_orders
++            WHERE infinitepay_transaction_nsu=?
++              AND id<>?
++            LIMIT 1
++            """,
++            (
++                transaction_nsu,
++                order_id,
++            ),
++        ).fetchone()
++
++        if duplicate_transaction:
++            return JSONResponse(
++                {
++                    "success": False,
++                    "message": "Transação já vinculada a outro pedido.",
++                },
++                status_code=400,
++            )
++
++        try:
++            total = float(
++                row_get(order, "total", 0) or 0
++            )
++        except (TypeError, ValueError):
++            total = 0.0
++
++        expected_cents = int(
++            round(total * 100)
++        )
++
++    # Fecha explicitamente a conexão antes do payment_check externo.
++    con.close()
++
++    if expected_cents <= 0:
++        return JSONResponse(
++            {
++                "success": False,
++                "message": "Total do pedido inválido.",
++            },
++            status_code=400,
++        )
++
++    # O valor recebido no webhook não é suficiente para confirmar,
++    # mas, quando presente, não pode contradizer o pedido.
++    if webhook_amount_raw is not None:
++        webhook_amount = _infinitepay_webhook_int(
++            webhook_amount_raw
++        )
++
++        if webhook_amount is None:
++            return JSONResponse(
++                {
++                    "success": False,
++                    "message": "Valor do webhook inválido.",
++                },
++                status_code=400,
++            )
++
++        if webhook_amount != expected_cents:
++            return JSONResponse(
++                {
++                    "success": False,
++                    "message": "Valor do webhook não corresponde ao pedido.",
++                },
++                status_code=400,
++            )
++
++    # paid_amount pode ser diferente de amount segundo a documentação.
++    if webhook_paid_amount_raw is not None:
++        webhook_paid_amount = _infinitepay_webhook_int(
++            webhook_paid_amount_raw
++        )
++
++        if (
++            webhook_paid_amount is None
++            or webhook_paid_amount < 0
++        ):
++            return JSONResponse(
++                {
++                    "success": False,
++                    "message": "paid_amount inválido.",
++                },
++                status_code=400,
++            )
++
++    settings = get_checkout_settings()
++
++    handle = _infinitepay_webhook_text(
++        settings.get("infinitepay_handle"),
++        300,
++    )
++
++    if not handle:
++        return JSONResponse(
++            {
++                "success": False,
++                "message": "InfinitePay não configurada.",
++            },
++            status_code=400,
++        )
++
++    payment_check_payload = {
++        "handle": handle,
++        "order_nsu": order_nsu,
++        "transaction_nsu": transaction_nsu,
++        "slug": invoice_slug,
++    }
++
++    # Nenhuma conexão SQLite permanece aberta durante esta chamada.
++    try:
++        check_status, check = infinitepay_payment_check(
++            payment_check_payload
++        )
++    except Exception:
++        return JSONResponse(
++            {
++                "success": False,
++                "message": "Falha ao consultar o pagamento.",
++            },
++            status_code=400,
++        )
++
++    if not (
++        200 <= int(check_status or 0) < 300
++        and isinstance(check, dict)
++        and check.get("success") is True
++        and check.get("paid") is True
++    ):
++        return JSONResponse(
++            {
++                "success": False,
++                "message": "Pagamento ainda não confirmado pela InfinitePay.",
++            },
++            status_code=400,
++        )
++
++    check_amount = _infinitepay_webhook_int(
++        check.get("amount")
++    )
++
++    if check_amount is None:
++        return JSONResponse(
++            {
++                "success": False,
++                "message": "Valor não informado na confirmação.",
++            },
++            status_code=400,
++        )
++
++    if check_amount != expected_cents:
++        _r7n_h3_mark_verified_online_payment_conflict(order_id)
++        return JSONResponse(
++            {
++                "success": False,
++                "message": "Valor confirmado não corresponde ao pedido.",
++            },
++            status_code=400,
++        )
++
++    check_paid_amount_raw = check.get(
++        "paid_amount"
++    )
++
++    if check_paid_amount_raw is not None:
++        check_paid_amount = _infinitepay_webhook_int(
++            check_paid_amount_raw
++        )
++
++        if (
++            check_paid_amount is None
++            or check_paid_amount < 0
++        ):
++            return JSONResponse(
++                {
++                    "success": False,
++                    "message": "paid_amount inválido na confirmação.",
++                },
++                status_code=400,
++            )
++
++    checked_order_nsu = _infinitepay_webhook_text(
++        check.get("order_nsu"),
++        200,
++    )
++
++    if (
++        checked_order_nsu
++        and checked_order_nsu != order_nsu
++    ):
++        _r7n_h3_mark_verified_online_payment_conflict(order_id)
++        return JSONResponse(
++            {
++                "success": False,
++                "message": "order_nsu divergente na confirmação.",
++            },
++            status_code=400,
++        )
++
++    checked_transaction_nsu = _infinitepay_webhook_text(
++        check.get("transaction_nsu"),
++        300,
++    )
++
++    if (
++        checked_transaction_nsu
++        and checked_transaction_nsu != transaction_nsu
++    ):
++        _r7n_h3_mark_verified_online_payment_conflict(order_id)
++        return JSONResponse(
++            {
++                "success": False,
++                "message": "transaction_nsu divergente na confirmação.",
++            },
++            status_code=400,
++        )
++
++    checked_slug = _infinitepay_webhook_text(
++        check.get("invoice_slug")
++        or check.get("slug"),
++        300,
++    )
++
++    if (
++        checked_slug
++        and checked_slug != invoice_slug
++    ):
++        _r7n_h3_mark_verified_online_payment_conflict(order_id)
++        return JSONResponse(
++            {
++                "success": False,
++                "message": "Identificação da cobrança divergente.",
++            },
++            status_code=400,
++        )
++
++    # Nova leitura/lock depois da confirmação server-to-server.
++    try:
++        with get_db() as con:
++            con.execute("BEGIN IMMEDIATE")
++
++            current = con.execute(
++                """
++                SELECT *
++                FROM online_orders
++                WHERE id=?
++                  AND infinitepay_order_nsu=?
++                """,
++                (
++                    order_id,
++                    order_nsu,
++                ),
++            ).fetchone()
++
++            if not current:
++                con.rollback()
++                return JSONResponse(
++                    {
++                        "success": False,
++                        "message": "Pedido não localizado na confirmação final.",
++                    },
++                    status_code=400,
++                )
++
++            current_transaction = (
++                _infinitepay_webhook_text(
++                    row_get(
++                        current,
++                        "infinitepay_transaction_nsu",
++                        "",
++                    ),
++                    300,
++                )
++            )
++
++            current_slug = _infinitepay_webhook_text(
++                row_get(
++                    current,
++                    "infinitepay_invoice_slug",
++                    "",
++                ),
++                300,
++            )
++
++            current_payment_status = (
++                _infinitepay_webhook_text(
++                    row_get(
++                        current,
++                        "payment_status",
++                        "",
++                    ),
++                    80,
++                ).lower()
++            )
++
++            current_status = _infinitepay_webhook_text(
++                row_get(
++                    current,
++                    "status",
++                    "",
++                ),
++                80,
++            ).lower()
++
++            if (
++                current_payment_status == "confirmado"
++                and current_transaction == transaction_nsu
++                and (
++                    not current_slug
++                    or current_slug == invoice_slug
++                )
++            ):
++                con.rollback()
++                return JSONResponse(
++                    {
++                        "success": True,
++                        "confirmed": True,
++                        "idempotent": True,
++                    },
++                    status_code=200,
++                )
++
++            if (
++                current_transaction
++                and current_transaction != transaction_nsu
++            ):
++                con.rollback()
++                return JSONResponse(
++                    {
++                        "success": False,
++                        "message": "Pedido já vinculado a outra transação.",
++                    },
++                    status_code=400,
++                )
++
++            if (
++                current_slug
++                and current_slug != invoice_slug
++            ):
++                con.rollback()
++                return JSONResponse(
++                    {
++                        "success": False,
++                        "message": "Pedido já vinculado a outra cobrança.",
++                    },
++                    status_code=400,
++                )
++
++            if current_status in {
++                "cancelado",
++                "conflito",
++            }:
++                con.rollback()
++                return JSONResponse(
++                    {
++                        "success": False,
++                        "message": "Pedido não aceita confirmação neste estado.",
++                    },
++                    status_code=400,
++                )
++
++            duplicate_transaction = con.execute(
++                """
++                SELECT id
++                FROM online_orders
++                WHERE infinitepay_transaction_nsu=?
++                  AND id<>?
++                LIMIT 1
++                """,
++                (
++                    transaction_nsu,
++                    order_id,
++                ),
++            ).fetchone()
++
++            if duplicate_transaction:
++                con.rollback()
++                return JSONResponse(
++                    {
++                        "success": False,
++                        "message": "Transação já vinculada a outro pedido.",
++                    },
++                    status_code=400,
++                )
++
++            try:
++                con.execute(
++                    """
++                    UPDATE online_orders
++                    SET infinitepay_transaction_nsu=?,
++                        infinitepay_invoice_slug=?,
++                        updated_at=?
++                    WHERE id=?
++                      AND infinitepay_order_nsu=?
++                      AND (
++                            infinitepay_transaction_nsu IS NULL
++                            OR TRIM(infinitepay_transaction_nsu)=''
++                            OR infinitepay_transaction_nsu=?
++                          )
++                    """,
++                    (
++                        transaction_nsu,
++                        invoice_slug,
++                        now_iso(),
++                        order_id,
++                        order_nsu,
++                        transaction_nsu,
++                    ),
++                )
++            except sqlite3.IntegrityError:
++                return JSONResponse(
++                    {
++                        "success": False,
++                        "message": "Transação já vinculada a outro pedido.",
++                    },
++                    status_code=400,
++                )
++
++            linked = con.execute(
++                """
++                SELECT infinitepay_transaction_nsu,
++                       infinitepay_invoice_slug
++                FROM online_orders
++                WHERE id=?
++                """,
++                (order_id,),
++            ).fetchone()
++
++            if (
++                not linked
++                or _infinitepay_webhook_text(
++                    linked["infinitepay_transaction_nsu"],
++                    300,
++                ) != transaction_nsu
++            ):
++                return JSONResponse(
++                    {
++                        "success": False,
++                        "message": "Não foi possível vincular a transação ao pedido.",
++                    },
++                    status_code=400,
++                )
++
++            sale_ok, sale_message, sale_id = _br_live_provider_dispatch_v6(
++                con,
++                order_id=order_id,
++                provider_transaction_nsu=transaction_nsu,
++                provider_invoice_slug=invoice_slug,
++                record_provider_payment=_br_live_record_provider_payment_v5,
++                finalize_paid_hold=_br_live_finalize_paid_hold_v5,
++                create_sale_for_live_reservation=create_sale_for_live_reservation,
++                fallback_finalize=create_sale_for_online_order,
++                now_iso=now_iso,
++                fallback_source_label='infinitepay',
++            )
++
++            if not sale_ok:
++                return JSONResponse(
++                    {
++                        "success": False,
++                        "message": sale_message or "Falha ao finalizar pagamento.",
++                    },
++                    status_code=400,
++                )
++
++            _br_live_sync_v7 = _br_sync_live_order_payment_v7(
++                con,
++                order_id=order_id,
++                provider_transaction_nsu=transaction_nsu,
++                provider_invoice_slug=invoice_slug,
++                now_iso=now_iso,
++            )
++            if not _br_live_sync_v7.get('ok'):
++                return JSONResponse(
++                    {
++                        'success': False,
++                        'message': 'Falha ao sincronizar checkout Live após pagamento.',
++                    },
++                    status_code=400,
++                )
++
++            confirmed_at = now_iso()
++
++            con.execute(
++                """
++                UPDATE online_orders
++                SET payment_status='confirmado',
++                    payment_confirmed_by='infinitepay',
++                    infinitepay_transaction_nsu=?,
++                    infinitepay_invoice_slug=?,
++                    updated_at=?
++                WHERE id=?
++                  AND infinitepay_order_nsu=?
++                """,
++                (
++                    transaction_nsu,
++                    invoice_slug,
++                    confirmed_at,
++                    order_id,
++                    order_nsu,
++                ),
++            )
++
++            final = con.execute(
++                """
++                SELECT status,
++                       payment_status,
++                       payment_confirmed_by,
++                       infinitepay_transaction_nsu,
++                       sale_id
++                FROM online_orders
++                WHERE id=?
++                """,
++                (order_id,),
++            ).fetchone()
++
++            if (
++                not final
++                or str(final["status"] or "").lower() != "pago"
++                or str(final["payment_status"] or "").lower() != "confirmado"
++                or str(
++                    final["payment_confirmed_by"] or ""
++                ).lower() != "infinitepay"
++                or _infinitepay_webhook_text(
++                    final["infinitepay_transaction_nsu"],
++                    300,
++                ) != transaction_nsu
++            ):
++                raise RuntimeError(
++                    "Confirmação InfinitePay incompleta."
++                )
++
++            create_sale_for_online_order(
++                con,
++                order_id,
++                source_label=finalizer_source_label,
++            )
++
++    except sqlite3.IntegrityError:
++        return JSONResponse(
++            {
++                "success": False,
++                "message": "Conflito de idempotência da transação.",
++            },
++            status_code=400,
++        )
++    except Exception:
++        return JSONResponse(
++            {
++                "success": False,
++                "message": "Falha ao finalizar pagamento.",
++            },
++            status_code=400,
++        )
++
++    result = {
++        "success": True,
++        "confirmed": True,
++        "idempotent": False,
++    }
++
++    if capture_method:
++        result["capture_method"] = capture_method
++
++    if sale_id:
++        result["sale_id"] = int(sale_id)
++
++    return JSONResponse(
++        result,
++        status_code=200,
++    )
++
++
+ @app.post("/api/webhooks/infinitepay")
+ async def infinitepay_webhook(
+     request: Request,
+@@ -13740,6 +14255,7 @@
+     capture_method = _infinitepay_webhook_text(
+         body.get("capture_method"),
+         80,
+     )
++
+     webhook_amount_raw = body.get("amount")
+     webhook_paid_amount_raw = body.get("paid_amount")
+ 
+@@ -13772,474 +14288,17 @@
+             status_code=400,
+         )
+ 
+-    # Primeira leitura local.
+-    # A conexão é encerrada logicamente antes da chamada HTTP externa.
+-    with get_db() as con:
+-        required_columns = {
+-            "infinitepay_order_nsu",
+-            "infinitepay_transaction_nsu",
+-            "infinitepay_invoice_slug",
+-            "payment_status",
+-            "payment_confirmed_by",
+-        }
+-
+-        columns = set(
+-            table_columns(
+-                con,
+-                "online_orders",
+-            )
+-        )
+-
+-        if not required_columns.issubset(columns):
+-            return JSONResponse(
+-                {
+-                    "success": False,
+-                    "message": "Estrutura de pagamento indisponível.",
+-                },
+-                status_code=400,
+-            )
+-
+-        matches = con.execute(
+-            """
+-            SELECT *
+-            FROM online_orders
+-            WHERE infinitepay_order_nsu=?
+-            LIMIT 2
+-            """,
+-            (order_nsu,),
+-        ).fetchall()
+-
+-        if len(matches) != 1:
+-            return JSONResponse(
+-                {
+-                    "success": False,
+-                    "message": "Pedido InfinitePay não localizado de forma única.",
+-                },
+-                status_code=400,
+-            )
+-
+-        order = matches[0]
+-        order_id = int(order["id"])
+-
+-        stored_transaction = _infinitepay_webhook_text(
+-            row_get(
+-                order,
+-                "infinitepay_transaction_nsu",
+-                "",
+-            ),
+-            300,
+-        )
+-
+-        stored_slug = _infinitepay_webhook_text(
+-            row_get(
+-                order,
+-                "infinitepay_invoice_slug",
+-                "",
+-            ),
+-            300,
+-        )
+-
+-        payment_status = _infinitepay_webhook_text(
+-            row_get(
+-                order,
+-                "payment_status",
+-                "",
+-            ),
+-            80,
+-        ).lower()
+-
+-        order_status = _infinitepay_webhook_text(
+-            row_get(
+-                order,
+-                "status",
+-                "",
+-            ),
+-            80,
+-        ).lower()
+-
+-        # Webhook repetido de pagamento já confirmado:
+-        # responde sucesso sem recriar venda.
+-        if (
+-            payment_status == "confirmado"
+-            and stored_transaction == transaction_nsu
+-            and (
+-                not stored_slug
+-                or stored_slug == invoice_slug
+-            )
+-        ):
+-            return JSONResponse(
+-                {
+-                    "success": True,
+-                    "confirmed": True,
+-                    "idempotent": True,
+-                },
+-                status_code=200,
+-            )
+-
+-        if stored_transaction and (
+-            stored_transaction != transaction_nsu
+-        ):
+-            return JSONResponse(
+-                {
+-                    "success": False,
+-                    "message": "Pedido já vinculado a outra transação.",
+-                },
+-                status_code=400,
+-            )
+-
+-        if stored_slug and stored_slug != invoice_slug:
+-            return JSONResponse(
+-                {
+-                    "success": False,
+-                    "message": "Pedido já vinculado a outra cobrança.",
+-                },
+-                status_code=400,
+-            )
+-
+-        if order_status in {
+-            "cancelado",
+-            "conflito",
+-        }:
+-            return JSONResponse(
+-                {
+-                    "success": False,
+-                    "message": "Pedido não aceita confirmação neste estado.",
+-                },
+-                status_code=400,
+-            )
+-
+-        duplicate_transaction = con.execute(
+-            """
+-            SELECT id
+-            FROM online_orders
+-            WHERE infinitepay_transaction_nsu=?
+-              AND id<>?
+-            LIMIT 1
+-            """,
+-            (
+-                transaction_nsu,
+-                order_id,
+-            ),
+-        ).fetchone()
+-
+-        if duplicate_transaction:
+-            return JSONResponse(
+-                {
+-                    "success": False,
+-                    "message": "Transação já vinculada a outro pedido.",
+-                },
+-                status_code=400,
+-            )
+-
+-        try:
+-            total = float(
+-                row_get(order, "total", 0) or 0
+-            )
+-        except (TypeError, ValueError):
+-            total = 0.0
+-
+-        expected_cents = int(
+-            round(total * 100)
+-        )
+-
+-    # Fecha explicitamente a conexão antes do payment_check externo.
+-    con.close()
+-
+-    if expected_cents <= 0:
+-        return JSONResponse(
+-            {
+-                "success": False,
+-                "message": "Total do pedido inválido.",
+-            },
+-            status_code=400,
+-        )
+-
+-    # O valor recebido no webhook não é suficiente para confirmar,
+-    # mas, quando presente, não pode contradizer o pedido.
+-    if webhook_amount_raw is not None:
+-        webhook_amount = _infinitepay_webhook_int(
+-            webhook_amount_raw
+-        )
+-
+-        if webhook_amount is None:
+-            return JSONResponse(
+-                {
+-                    "success": False,
+-                    "message": "Valor do webhook inválido.",
+-                },
+-                status_code=400,
+-            )
+-
+-        if webhook_amount != expected_cents:
+-            return JSONResponse(
+-                {
+-                    "success": False,
+-                    "message": "Valor do webhook não corresponde ao pedido.",
+-                },
+-                status_code=400,
+-            )
+-
+-    # paid_amount pode ser diferente de amount segundo a documentação.
+-    # Portanto ele não é comparado com igualdade ao total.
+-    if webhook_paid_amount_raw is not None:
+-        webhook_paid_amount = _infinitepay_webhook_int(
+-            webhook_paid_amount_raw
+-        )
+-
+-        if (
+-            webhook_paid_amount is None
+-            or webhook_paid_amount < 0
+-        ):
+-            return JSONResponse(
+-                {
+-                    "success": False,
+-                    "message": "paid_amount inválido.",
+-                },
+-                status_code=400,
+-            )
+-
+-    settings = get_checkout_settings()
+-
+-    handle = _infinitepay_webhook_text(
+-        settings.get("infinitepay_handle"),
+-        300,
+-    )
+-
+-    if not handle:
+-        return JSONResponse(
+-            {
+-                "success": False,
+-                "message": "InfinitePay não configurada.",
+-            },
+-            status_code=400,
+-        )
+-
+-    payment_check_payload = {
+-        "handle": handle,
+-        "order_nsu": order_nsu,
+-        "transaction_nsu": transaction_nsu,
+-        "slug": invoice_slug,
+-    }
+-
+-    # Nenhuma conexão SQLite permanece aberta durante esta chamada.
+-    try:
+-        check_status, check = infinitepay_payment_check(
+-            payment_check_payload
+-        )
+-    except Exception:
+-        return JSONResponse(
+-            {
+-                "success": False,
+-                "message": "Falha ao consultar o pagamento.",
+-            },
+-            status_code=400,
+-        )
+-
+-    if not (
+-        200 <= int(check_status or 0) < 300
+-        and isinstance(check, dict)
+-        and check.get("success") is True
+-        and check.get("paid") is True
+-    ):
+-        return JSONResponse(
+-            {
+-                "success": False,
+-                "message": "Pagamento ainda não confirmado pela InfinitePay.",
+-            },
+-            status_code=400,
+-        )
+-
+-    check_amount = _infinitepay_webhook_int(
+-        check.get("amount")
+-    )
+-
+-    if check_amount is None:
+-        return JSONResponse(
+-            {
+-                "success": False,
+-                "message": "Valor não informado na confirmação.",
+-            },
+-            status_code=400,
+-        )
+-
+-    if check_amount != expected_cents:
+-        _r7n_h3_mark_verified_online_payment_conflict(order_id)
+-        return JSONResponse(
+-            {
+-                "success": False,
+-                "message": "Valor confirmado não corresponde ao pedido.",
+-            },
+-            status_code=400,
+-        )
+-
+-    check_paid_amount_raw = check.get(
+-        "paid_amount"
+-    )
+-
+-    if check_paid_amount_raw is not None:
+-        check_paid_amount = _infinitepay_webhook_int(
+-            check_paid_amount_raw
+-        )
+-
+-        if (
+-            check_paid_amount is None
+-            or check_paid_amount < 0
+-        ):
+-            return JSONResponse(
+-                {
+-                    "success": False,
+-                    "message": "paid_amount inválido na confirmação.",
+-                },
+-                status_code=400,
+-            )
+-
+-    # Alguns retornos podem incluir novamente os identificadores.
+-    # Se vierem, precisam coincidir. Se não vierem, não são inventados.
+-    checked_order_nsu = _infinitepay_webhook_text(
+-        check.get("order_nsu"),
+-        200,
+-    )
+-
+-    if (
+-        checked_order_nsu
+-        and checked_order_nsu != order_nsu
+-    ):
+-        _r7n_h3_mark_verified_online_payment_conflict(order_id)
+-        return JSONResponse(
+-            {
+-                "success": False,
+-                "message": "order_nsu divergente na confirmação.",
+-            },
+-            status_code=400,
+-        )
+-
+-    checked_transaction_nsu = _infinitepay_webhook_text(
+-        check.get("transaction_nsu"),
+-        300,
+-    )
+-
+-    if (
+-        checked_transaction_nsu
+-        and checked_transaction_nsu != transaction_nsu
+-    ):
+-        _r7n_h3_mark_verified_online_payment_conflict(order_id)
+-        return JSONResponse(
+-            {
+-                "success": False,
+-                "message": "transaction_nsu divergente na confirmação.",
+-            },
+-            status_code=400,
+-        )
+-
+-    checked_slug = _infinitepay_webhook_text(
+-        check.get("invoice_slug")
+-        or check.get("slug"),
+-        300,
+-    )
+-
+-    if (
+-        checked_slug
+-        and checked_slug != invoice_slug
+-    ):
+-        _r7n_h3_mark_verified_online_payment_conflict(order_id)
+-        return JSONResponse(
+-            {
+-                "success": False,
+-                "message": "Identificação da cobrança divergente.",
+-            },
+-            status_code=400,
+-        )
+-
+-    # Nova leitura/lock depois da confirmação server-to-server,
+-    # para impedir dois webhooks idênticos concorrentes
+-    # de atravessarem simultaneamente esta seção crítica.
+-    try:
+-        with get_db() as con:
+-            con.execute("BEGIN IMMEDIATE")
+-            # BRECHORISEE_INFINITEPAY_WEBHOOK_TX_ROLLBACK_V1
+-
+-            current = con.execute(
+-                """
+-                SELECT *
+-                FROM online_orders
+-                WHERE id=?
+-                  AND infinitepay_order_nsu=?
+-                """,
+-                (
+-                    order_id,
+-                    order_nsu,
+-                ),
+-            ).fetchone()
+-
+-            if not current:
+-                con.rollback()
+-                return JSONResponse(
+-                    {
+-                        "success": False,
+-                        "message": "Pedido não localizado na confirmação final.",
+-                    },
+-                    status_code=400,
+-                )
+-
+-            current_transaction = (
+-                _infinitepay_webhook_text(
+-                    row_get(
+-                        current,
+-                        "infinitepay_transaction_nsu",
+-                        "",
+-                    ),
+-                    300,
+-                )
+-            )
+-
+-            current_slug = _infinitepay_webhook_text(
+-                row_get(
+-                    current,
+-                    "infinitepay_invoice_slug",
+-                    "",
+-                ),
+-                300,
+-            )
+-
+-            current_payment_status = (
+-                _infinitepay_webhook_text(
+-                    row_get(
+-                        current,
+-                        "payment_status",
+-                        "",
+-                    ),
+-                    80,
+-                ).lower()
+-            )
+-
+-            current_status = _infinitepay_webhook_text(
+-                row_get(
+-                    current,
+-                    "status",
+-                    "",
+-                ),
+-                80,
+-            ).lower()
+-
+-            if (
+-                current_payment_status == "confirmado"
+-                and current_transaction == transaction_nsu
+-                and (
+-                    not current_slug
+-                    or current_slug == invoice_slug
+-                )
+-            ):
+-                con.rollback()
+-                return JSONResponse(
+-                    {
+-                        "success": True,
+-                        "confirmed": True,
+-                        "idempotent": True,
+-                    },
+-                    status_code=200,
+-                )
+-
+-            if (
+-                current_transaction
+-                and current_transaction != transaction_nsu
+-            ):
+-                con.rollback()
+-                return JSONResponse(
+-                    {
+-                        "success": False,
+-                        "message": "Pedido já vinculado a outra transação.",
+-                    },
+-                    status_code=400,
+-                )
+-
+-            if (
+-                current_slug
+-                and current_slug != invoice_slug
+-            ):
+-                con.rollback()
+-                return JSONResponse(
+-                    {
+-                        "success": False,
+-                        "message": "Pedido já vinculado a outra cobrança.",
+-                    },
+-                    status_code=400,
+-                )
+-
+-            if current_status in {
+-                "cancelado",
+-                "conflito",
+-            }:
+-                con.rollback()
+-                return JSONResponse(
+-                    {
+-                        "success": False,
+-                        "message": "Pedido não aceita confirmação neste estado.",
+-                    },
+-                    status_code=400,
+-                )
+-
+-            duplicate_transaction = con.execute(
+-                """
+-                SELECT id
+-                FROM online_orders
+-                WHERE infinitepay_transaction_nsu=?
+-                  AND id<>?
+-                LIMIT 1
+-                """,
+-                (
+-                    transaction_nsu,
+-                    order_id,
+-                ),
+-            ).fetchone()
+-
+-            if duplicate_transaction:
+-                con.rollback()
+-                return JSONResponse(
+-                    {
+-                        "success": False,
+-                        "message": "Transação já vinculada a outro pedido.",
+-                    },
+-                    status_code=400,
+-                )
+-
+-            try:
+-                con.execute(
+-                    """
+-                    UPDATE online_orders
+-                    SET infinitepay_transaction_nsu=?,
+-                        infinitepay_invoice_slug=?,
+-                        updated_at=?
+-                    WHERE id=?
+-                      AND infinitepay_order_nsu=?
+-                      AND (
+-                            infinitepay_transaction_nsu IS NULL
+-                            OR TRIM(infinitepay_transaction_nsu)=''
+-                            OR infinitepay_transaction_nsu=?
+-                          )
+-                    """,
+-                    (
+-                        transaction_nsu,
+-                        invoice_slug,
+-                        now_iso(),
+-                        order_id,
+-                        order_nsu,
+-                        transaction_nsu,
+-                    ),
+-                )
+-            except sqlite3.IntegrityError:
+-                return JSONResponse(
+-                    {
+-                        "success": False,
+-                        "message": "Transação já vinculada a outro pedido.",
+-                    },
+-                    status_code=400,
+-                )
+-
+-            linked = con.execute(
+-                """
+-                SELECT infinitepay_transaction_nsu,
+-                       infinitepay_invoice_slug
+-                FROM online_orders
+-                WHERE id=?
+-                """,
+-                (order_id,),
+-            ).fetchone()
+-
+-            if (
+-                not linked
+-                or _infinitepay_webhook_text(
+-                    linked["infinitepay_transaction_nsu"],
+-                    300,
+-                ) != transaction_nsu
+-            ):
+-                return JSONResponse(
+-                    {
+-                        "success": False,
+-                        "message": "Não foi possível vincular a transação ao pedido.",
+-                    },
+-                    status_code=400,
+-                )
+-
+-            sale_ok, sale_message, sale_id = _br_live_provider_dispatch_v6(
+-                con,
+-                order_id=order_id,
+-                provider_transaction_nsu=transaction_nsu,
+-                provider_invoice_slug=invoice_slug,
+-                record_provider_payment=_br_live_record_provider_payment_v5,
+-                finalize_paid_hold=_br_live_finalize_paid_hold_v5,
+-                create_sale_for_live_reservation=create_sale_for_live_reservation,
+-                fallback_finalize=create_sale_for_online_order,
+-                now_iso=now_iso,
+-                fallback_source_label='infinitepay',
+-            )
+-
+-            if not sale_ok:
+-                return JSONResponse(
+-                    {
+-                        "success": False,
+-                        "message": sale_message or "Falha ao finalizar pagamento.",
+-                    },
+-                    status_code=400,
+-                )
+-            _br_live_sync_v7 = _br_sync_live_order_payment_v7(
+-                con,
+-                order_id=order_id,
+-                provider_transaction_nsu=transaction_nsu,
+-                provider_invoice_slug=invoice_slug,
+-                now_iso=now_iso,
+-            )
+-            if not _br_live_sync_v7.get('ok'):
+-                return JSONResponse(
+-                    {
+-                        'success': False,
+-                        'message': 'Falha ao sincronizar checkout Live após pagamento.',
+-                    },
+-                    status_code=400,
+-                )
+-
+-            confirmed_at = now_iso()
+-
+-            con.execute(
+-                """
+-                UPDATE online_orders
+-                SET payment_status='confirmado',
+-                    payment_confirmed_by='infinitepay',
+-                    infinitepay_transaction_nsu=?,
+-                    infinitepay_invoice_slug=?,
+-                    updated_at=?
+-                WHERE id=?
+-                  AND infinitepay_order_nsu=?
+-                """,
+-                (
+-                    transaction_nsu,
+-                    invoice_slug,
+-                    confirmed_at,
+-                    order_id,
+-                    order_nsu,
+-                ),
+-            )
+-
+-            final = con.execute(
+-                """
+-                SELECT status,
+-                       payment_status,
+-                       payment_confirmed_by,
+-                       infinitepay_transaction_nsu,
+-                       sale_id
+-                FROM online_orders
+-                WHERE id=?
+-                """,
+-                (order_id,),
+-            ).fetchone()
+-
+-            if (
+-                not final
+-                or str(final["status"] or "").lower() != "pago"
+-                or str(final["payment_status"] or "").lower() != "confirmado"
+-                or str(
+-                    final["payment_confirmed_by"] or ""
+-                ).lower() != "infinitepay"
+-                or _infinitepay_webhook_text(
+-                    final["infinitepay_transaction_nsu"],
+-                    300,
+-                ) != transaction_nsu
+-            ):
+-                raise RuntimeError(
+-                    "Confirmação InfinitePay incompleta."
+-                )
+-
+-            # R7N: after server-to-server InfinitePay verification and
+-            # successful financial synchronization, reuse the existing
+-            # idempotent commercial finalizer for ordinary online orders.
+-            create_sale_for_online_order(
+-                con,
+-                order_id,
+-                source_label="infinitepay_webhook_verified",
+-            )
+-
+-    except sqlite3.IntegrityError:
+-        return JSONResponse(
+-            {
+-                "success": False,
+-                "message": "Conflito de idempotência da transação.",
+-            },
+-            status_code=400,
+-        )
+-    except Exception:
+-        return JSONResponse(
+-            {
+-                "success": False,
+-                "message": "Falha ao finalizar pagamento.",
+-            },
+-            status_code=400,
+-        )
+-
+-    result = {
+-        "success": True,
+-        "confirmed": True,
+-        "idempotent": False,
+-    }
+-
+-    if capture_method:
+-        result["capture_method"] = capture_method
+-
+-    if sale_id:
+-        result["sale_id"] = int(sale_id)
+-
+-    return JSONResponse(
+-        result,
+-        status_code=200,
++    return _infinitepay_reconcile_payment(
++        order_nsu=order_nsu,
++        transaction_nsu=transaction_nsu,
++        invoice_slug=invoice_slug,
++        capture_method=capture_method,
++        webhook_amount_raw=webhook_amount_raw,
++        webhook_paid_amount_raw=webhook_paid_amount_raw,
++        finalizer_source_label="infinitepay_webhook_verified",
+     )
+@@ -19194,6 +19253,111 @@
+ 
+ @app.get("/loja/pedido/{order_id}", response_class=HTMLResponse)
+ def online_order_public_page(request: Request, order_id: str) -> Response:
+     order, items = load_online_order_public(order_id, request)
+     if not order:
+         raise HTTPException(status_code=404, detail="Pedido não encontrado.")
++
++    # BRECHORISEE_INFINITEPAY_REDIRECT_RECONCILE_R7L
++    # O retorno do navegador nunca confirma pagamento diretamente.
++    # Os identificadores apenas habilitam payment_check server-to-server.
++    redirect_order_nsu = _infinitepay_webhook_text(
++        request.query_params.get("order_nsu"),
++        200,
++    )
++    redirect_transaction_nsu = _infinitepay_webhook_text(
++        request.query_params.get("transaction_nsu"),
++        300,
++    )
++    redirect_slug = _infinitepay_webhook_text(
++        request.query_params.get("slug")
++        or request.query_params.get("invoice_slug"),
++        300,
++    )
++    redirect_capture_method = _infinitepay_webhook_text(
++        request.query_params.get("capture_method"),
++        80,
++    )
++
++    complete_provider_return = bool(
++        redirect_order_nsu
++        and redirect_transaction_nsu
++        and redirect_slug
++    )
++
++    if complete_provider_return:
++        stored_order_nsu = _infinitepay_webhook_text(
++            row_get(order, "infinitepay_order_nsu", ""),
++            200,
++        )
++        stored_transaction = _infinitepay_webhook_text(
++            row_get(order, "infinitepay_transaction_nsu", ""),
++            300,
++        )
++        stored_slug = _infinitepay_webhook_text(
++            row_get(order, "infinitepay_invoice_slug", ""),
++            300,
++        )
++        stored_payment_status = _infinitepay_webhook_text(
++            row_get(order, "payment_status", ""),
++            80,
++        ).lower()
++        stored_order_status = _infinitepay_webhook_text(
++            row_get(order, "status", ""),
++            80,
++        ).lower()
++
++        redirect_ids_safe = bool(
++            stored_order_nsu
++            and stored_order_nsu == redirect_order_nsu
++            and re.fullmatch(
++                r"[A-Za-z0-9._:-]{8,300}",
++                redirect_transaction_nsu,
++            )
++            and re.fullmatch(
++                r"[A-Za-z0-9._~-]{1,300}",
++                redirect_slug,
++            )
++        )
++
++        already_confirmed_same = bool(
++            stored_payment_status == "confirmado"
++            and stored_transaction == redirect_transaction_nsu
++            and (
++                not stored_slug
++                or stored_slug == redirect_slug
++            )
++        )
++
++        clean_order_url = f"/loja/pedido/{order_id}"
++
++        if redirect_ids_safe and already_confirmed_same:
++            return RedirectResponse(
++                url=clean_order_url,
++                status_code=303,
++            )
++
++        if (
++            redirect_ids_safe
++            and stored_payment_status != "confirmado"
++            and stored_order_status not in {"cancelado", "conflito"}
++        ):
++            # GET normalmente não entra no middleware de write gate.
++            # Portanto o fallback financeiro aplica explicitamente a mesma
++            # trava de autoridade/failover antes de qualquer efeito externo.
++            decision = failover_write_gate_decision(check_peer=True)
++            if decision.get("allowed"):
++                request.state.brechorisee_skip_auto_sync = True
++                reconcile_response = _infinitepay_reconcile_payment(
++                    order_nsu=redirect_order_nsu,
++                    transaction_nsu=redirect_transaction_nsu,
++                    invoice_slug=redirect_slug,
++                    capture_method=redirect_capture_method,
++                    finalizer_source_label="infinitepay_redirect_verified",
++                )
++
++                # Um provider-verified mismatch pode ter movido o pedido para
++                # conflito; recarregamos sempre antes de renderizar.
++                order, items = load_online_order_public(order_id, request)
++                if not order:
++                    raise HTTPException(
++                        status_code=404,
++                        detail="Pedido não encontrado.",
++                    )
++
++                if int(reconcile_response.status_code or 0) == 200:
++                    return RedirectResponse(
++                        url=clean_order_url,
++                        status_code=303,
++                    )
++
+     msg = online_order_message(order, items, request)
+     # BRECHORISEE_PUBLIC_CHECKOUT_SETTINGS_V1
+     public_settings = get_store_settings()
